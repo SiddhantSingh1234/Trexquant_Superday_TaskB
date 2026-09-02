@@ -1,0 +1,76 @@
+{
+  "exploration_floor": 0.05,
+  "families": {
+    "liquidity": {
+      "cumulative_reward": 0.0,
+      "family": "liquidity",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "microstructure": {
+      "cumulative_reward": 0.0,
+      "family": "microstructure",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "momentum": {
+      "cumulative_reward": 0.0,
+      "family": "momentum",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "quality_proxy": {
+      "cumulative_reward": 0.0,
+      "family": "quality_proxy",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "reversal": {
+      "cumulative_reward": 0.0,
+      "family": "reversal",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "seasonality": {
+      "cumulative_reward": 0.0,
+      "family": "seasonality",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "sentiment_proxy": {
+      "cumulative_reward": 0.0,
+      "family": "sentiment_proxy",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "trend": {
+      "cumulative_reward": 0.0,
+      "family": "trend",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "value_proxy": {
+      "cumulative_reward": 0.0,
+      "family": "value_proxy",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    },
+    "volatility": {
+      "cumulative_reward": 0.0,
+      "family": "volatility",
+      "last_k_deltas": [],
+      "n_pulls": 0,
+      "tokens_spent": 0
+    }
+  },
+  "updated_at": "2026-09-02T22:05:57+00:00"
+}

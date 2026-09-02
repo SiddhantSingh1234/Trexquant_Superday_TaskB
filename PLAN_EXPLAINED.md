@@ -16,9 +16,10 @@
 > | **`INITIAL_PLAN.md`** | The architecture spec — nine stages, gates, evaluation, references. Slide source | When you're building the deck |
 > | **`PLAN_EXPLAINED.md`** *(this file)* | The **decision record** — every doubt → decision → why — plus the dictionary, the detailed graph, and the honest FAQ | When you need *why* we chose something, or a term defined |
 >
-> **Status:** design **frozen**. Decision clusters **A–I** all resolved. Later clusters supersede earlier
-> ones where marked — look for **UPDATE / SUPERSEDED** callouts, which deliberately keep the original
-> text visible so the *reasoning trail* survives.
+> **Status:** design **frozen**. Decision clusters **A–J** all resolved (J = the memory guards, added
+> from the P7 build). Later clusters supersede earlier ones where marked — look for
+> **UPDATE / SUPERSEDED** callouts, which deliberately keep the original text visible so the
+> *reasoning trail* survives.
 
 ---
 
@@ -493,6 +494,37 @@ computation*. Verdict math stays un-gameable code (our edge vs naive "LLM-as-jud
   *Why record a rejected idea:* an inert gate on a slide invites *"what has that ever caught?"* — a
   question with no good answer.
 
+### Cluster J — memory guards against second-order overfitting (from the P7 build) — ✅ RESOLVED (NEW)
+
+- **J27 · The two guards are the only defense against overfitting the *search process*, so their exact
+  form matters.** The backtester scores *signals*; nothing scores the *policy that generated them*. If
+  Reflection writes *"momentum fails"* after three failures and the Planner defunds momentum, an
+  irreversible decision has been made on **n = 3** — and it never shows up in any backtest. Two guards,
+  both in `src/memory.py`, and how they were actually built:
+
+  | Guard | Rule as built | Why this shape |
+  |---|---|---|
+  | **Confidence gate** | a lesson is **not** returned as an applicable prior until `n_observations >= 3` | one or two data points never move the Planner |
+  | **Asymmetric veto** | a motif is hard-blocked in a context iff the gate is met **AND** ≥ **2** independent high-confidence (≥ 0.80) *failures* have been seen. Successes never set it and **never clear it** (sticky); the only reversal is an explicit `clear_veto()` — a logged human/Planner call. `force_veto()` bypasses the count for a deliberate human block. | failures are more reliable evidence than successes in a noisy domain. *Two* failures, not one, so a fluke can't block. The gate, so it's never an n<3 call. Sticky, because "erode the veto on a good run" was tried first and was exactly backwards — one lucky backtest wiped out three failure lessons |
+  | **Exploration floor** | every idea-family keeps ≥ **5%** of the token budget, forever — softmax over mean reward, then floored and renormalised | a family starved to 0% can never demonstrate that its earlier failures were regime-specific. The floor — not veto erosion — is what makes a premature "X always fails" verdict self-correcting |
+
+  *Slide framing:* "We built a system to catch self-deception in signals. The same discipline has to
+  apply to the search: these guards exist because a factor-mining agent that defunds an idea family on
+  three data points has overfit its own policy, invisibly."
+
+- **J28 · `confidence` means *reliability*, not *direction*.** A lesson carries two numbers:
+  `p_helps` (EWMA of the helped/hurt signal — the direction) and `confidence`
+  (`|2·p_helps − 1| · maturity` — one-sidedness × how much evidence). A motif that *reliably hurts*
+  therefore reads as **high confidence, low p_helps** — the negative knowledge is not hidden behind a
+  small number, which is what a naive single-scalar "confidence" would do.
+
+- **J29 · Two build-detail rulings deferred to phase review** (recorded so they reach the slides if they
+  end up mattering): (a) the AlphaCard **`validate_card` / `make_fake_card`** were added to
+  `src/contracts.py` — the home Section 0 specifies for every artifact validator — even though P0 had
+  been signed off without them; the edit is purely additive. (b) The top-level card **`verdict`
+  vocabulary** is `{accept, reject, revise, provisional}` (`provisional` = pre-Gate-B); `"survives"` in
+  the Section 0.5 example belongs to the nested `redteam` block, not this field.
+
 ### Infrastructure — free LLM API (build-time) — ✅ DECIDED
 
 - **Primary: Groq (free, no credit card).**
@@ -514,7 +546,7 @@ computation*. Verdict math stays un-gameable code (our edge vs naive "LLM-as-jud
 - **Disclosure for slides:** open free models reason a notch below frontier → theses slightly weaker;
   *"swap in a frontier API in production"* is the trivial upgrade.
 
-**✅ All doubts (clusters A–I) resolved + infra + search policy chosen. This log is the canonical record — pull from it for the report/slides.**
+**✅ All doubts (clusters A–J) resolved + infra + search policy chosen. This log is the canonical record — pull from it for the report/slides.**
 
 ---
 

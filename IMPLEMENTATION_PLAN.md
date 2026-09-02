@@ -1222,6 +1222,27 @@ irreversible decision has been made on **n=3**. That is overfitting the *search 
 because it never appears in any backtest. Two defenses, both implemented here: **confidence gating**
 (②) and the **exploration floor** (③). Document both in docstrings.
 
+> **P7-UPDATE (from the build — `reports/p7_handoff.md` §7, PLAN_EXPLAINED J27–J29). Slide-ready.**
+> - **Veto trigger:** confidence gate and veto are *combined* — a motif is hard-blocked iff
+>   `n_observations >= 3` **AND** ≥ **2** independent high-confidence (≥ `VETO_CONFIDENCE = 0.80`)
+>   *failure* reports exist for that context. Never an n<3 block; never a one-sample block.
+>   `force_veto()` is a deliberate human override that bypasses the count.
+> - **Vetoes are sticky.** Successes never lift a veto (failures are the more reliable evidence in a
+>   noisy domain). Only an explicit `clear_veto()` reverses one. An earlier version that eroded the veto
+>   on good runs was a bug — one lucky backtest wiped three failure lessons; the exploration floor (③),
+>   not veto erosion, is what keeps a premature verdict recoverable.
+> - **`confidence` = reliability, not direction.** Two fields: `p_helps` (EWMA of helped/hurt) and
+>   `confidence = |2·p_helps − 1| · maturity`. A reliably-*harmful* motif has **high** `confidence`,
+>   **low** `p_helps` — the negative knowledge is not hidden behind a small number.
+> - **Physical layout:** exact stores ①④⑤ co-located in `data/memory.db`; the semantic lesson store ②
+>   is a physically separate `data/lessons.db`; ⑥ is `data/book.parquet`, long
+>   `date·symbol·factor·value` (the shape `gates._book_to_frames` already consumes).
+> - **`validate_card` + `make_fake_card`** added to `src/contracts.py` (Section 0's home for every
+>   artifact validator) — P0 shipped without them. Additive only. `new_card` (a builder, not a
+>   contract) stays in `memory.py`.
+> - **Top-level card `verdict`:** `{accept, reject, revise, provisional}` (`provisional` = pre-Gate-B).
+>   `"survives"` in the Section 0.5 example is the nested `redteam.verdict`, a different field.
+
 ## Acceptance
 - [ ] All stores survive a process restart (persistence works).
 - [ ] A lesson with `n_observations=1` is **not** returned as an applicable prior; at 3 it is.

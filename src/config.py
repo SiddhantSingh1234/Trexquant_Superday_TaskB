@@ -32,6 +32,14 @@ SLIDES_DIR: Path = REPO_ROOT / "slides"
 
 LEDGER_DB: Path = DATA_DIR / "ledger.db"
 
+# Phase 7 — memory stores.  Exact stores (formula index, card index, lineage)
+# live in memory.db; the semantic lesson store is a physically separate file
+# (data/lessons.db) so the two can never be confused for one another.
+MEMORY_DB: Path = DATA_DIR / "memory.db"
+LESSONS_DB: Path = DATA_DIR / "lessons.db"
+BANDIT_STATE_JSON: Path = DATA_DIR / "bandit_state.json"
+BOOK_PARQUET: Path = DATA_DIR / "book.parquet"
+
 # Named artifact files (contract paths — downstream phases import these)
 MEMBERSHIP_PARQUET: Path = UNIVERSE_DIR / "membership.parquet"
 SYMBOLS_JSON: Path = UNIVERSE_DIR / "symbols.json"

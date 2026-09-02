@@ -205,6 +205,104 @@ def validate_labels(df) -> None:
     _validate_frame(df, "labels", _LABELS_DTYPES)
 
 
+# --------------------------------------------------------------------------- #
+# AlphaCard — the project's output unit (Section 0.5)                           #
+# --------------------------------------------------------------------------- #
+_CARD_TOP_KEYS: tuple[str, ...] = (
+    "card_id", "thesis_id", "generation", "thesis", "pre_registered", "formula",
+    "ast_canonical", "complexity", "tier1_metrics", "fresh_fold_metrics",
+    "tier2_metrics", "audit", "redteam", "verdict", "lineage", "provenance",
+)
+_CARD_THESIS_KEYS: tuple[str, ...] = (
+    "mechanism", "counterparty", "why_not_arbitraged", "horizon_days", "regime",
+    "falsifiable_claim",
+)
+_CARD_PREREG_KEYS: tuple[str, ...] = ("sign", "horizon_days", "committed_at", "hash")
+_CARD_COMPLEXITY_KEYS: tuple[str, ...] = ("nodes", "depth", "free_params")
+_CARD_LINEAGE_KEYS: tuple[str, ...] = ("parent_card_id", "edit_motif")
+
+#: Top-level ``verdict`` vocabulary.  ``provisional`` is the pre-Gate-B state.
+#: (``"survives"`` in the Section 0.5 example belongs to the nested ``redteam``
+#: block, not this field.)
+CARD_VERDICTS: frozenset[str] = frozenset({"accept", "reject", "revise", "provisional"})
+
+
+class CardSchemaError(SchemaError):
+    """Raised by :func:`validate_card` on an AlphaCard (Section 0.5) violation."""
+
+
+def validate_card(card: dict) -> None:
+    """Assert ``card`` matches the AlphaCard JSON contract in Section 0.5.
+
+    Checks every top-level key, the nested key sets of ``thesis``,
+    ``pre_registered``, ``complexity`` and ``lineage``, the ``verdict``
+    vocabulary, and two cross-field sanity rules (non-empty ``card_id``,
+    ``pre_registered.sign`` ∈ {−1, +1}).  It does **not** re-derive the metrics —
+    that is Gate B's job (Phase 6), not a schema check.
+    """
+    name = "AlphaCard"
+    if not isinstance(card, dict):
+        raise CardSchemaError(f"[{name}] expected a dict, got {type(card)!r}")
+    for k in _CARD_TOP_KEYS:
+        if k not in card:
+            raise CardSchemaError(f"[{name}] missing top-level key: {k!r}")
+    if not str(card["card_id"]).strip():
+        raise CardSchemaError(f"[{name}] 'card_id' is empty")
+    for sub, keys in (
+        ("thesis", _CARD_THESIS_KEYS),
+        ("pre_registered", _CARD_PREREG_KEYS),
+        ("complexity", _CARD_COMPLEXITY_KEYS),
+        ("lineage", _CARD_LINEAGE_KEYS),
+    ):
+        if not isinstance(card.get(sub), dict):
+            raise CardSchemaError(f"[{name}] '{sub}' must be a dict")
+        for k in keys:
+            if k not in card[sub]:
+                raise CardSchemaError(f"[{name}] '{sub}' missing key: {k!r}")
+    if card["verdict"] not in CARD_VERDICTS:
+        raise CardSchemaError(
+            f"[{name}] 'verdict'={card['verdict']!r} not in {sorted(CARD_VERDICTS)}"
+        )
+    if int(card["pre_registered"]["sign"]) not in (-1, 1):
+        raise CardSchemaError(f"[{name}] 'pre_registered.sign' must be -1 or +1")
+    prov = card.get("provenance")
+    if not isinstance(prov, dict) or "fields_used" not in prov:
+        raise CardSchemaError(f"[{name}] 'provenance.fields_used' is required")
+
+
+def make_fake_card(seed: int = RANDOM_SEED, verdict: str = "accept") -> dict:
+    """A minimal schema-valid AlphaCard (Section 0.5 shape).
+
+    Static content — no operator library needed — so downstream phases can test
+    card round-tripping and the card index without building a real signal.
+    """
+    rng = np.random.default_rng(seed + 23)
+    cid = f"card_{int(rng.integers(1e6)):06d}"
+    return {
+        "card_id": cid, "thesis_id": "thesis_fake_01", "generation": 1,
+        "thesis": {
+            "mechanism": "liquidity providers demand a premium in stress",
+            "counterparty": "forced sellers rebalancing on a rule",
+            "why_not_arbitraged": "capacity-constrained, small-cap only",
+            "horizon_days": 5, "regime": "calm",
+            "falsifiable_claim": "RankIC > 0 out-of-sample on VAL_B",
+        },
+        "pre_registered": {
+            "sign": 1, "horizon_days": 5,
+            "committed_at": "2026-01-01T00:00:00", "hash": "sha256:" + "0" * 64,
+        },
+        "formula": "rank(div(ts_mean(volume,1), ts_mean(volume,20)))",
+        "ast_canonical": "rank(div(ts_mean(volume,1),ts_mean(volume,20)))",
+        "complexity": {"nodes": 8, "depth": 4, "free_params": 2},
+        "tier1_metrics": {"rank_ic": 0.030}, "fresh_fold_metrics": {"rank_ic": 0.022},
+        "tier2_metrics": {}, "audit": {"marginal_ic": 0.021, "deflated_sharpe": 0.97},
+        "redteam": {"tests_run": [], "results": {}, "verdict": "survives"},
+        "verdict": verdict,
+        "lineage": {"parent_card_id": None, "edit_motif": None},
+        "provenance": {"fields_used": ["volume"]},
+    }
+
+
 def validate_symbols_json(payload: dict) -> None:
     name = "symbols.json"
     if not isinstance(payload, dict):
