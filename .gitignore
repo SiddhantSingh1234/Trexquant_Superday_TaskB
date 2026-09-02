@@ -1,0 +1,28 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment / secrets
+.env
+
+# --- Large regenerated data ---
+# Ignore raw NSE downloads (~450 MB), but keep the tiny vendored sector list
+# that P3 needs at runtime. Note: ignore the *children* with *, not the dir
+# itself, so nse_meta can be re-included.
+data/raw/*
+!data/raw/nse_meta/
+
+# Regenerated parquet artifacts (rebuild: python -m src.prices / .universe / .panel)
+data/prices/*.parquet
+data/universe/*.parquet
+data/panel/*.parquet
+data/ledger.db
+
+# Keep the small text artifacts even though their dirs have ignores above
+!data/universe/symbols.json
+!data/panel/splits.json
+
+# Regenerated report binaries (keep the .md files)
+reports/*.png
