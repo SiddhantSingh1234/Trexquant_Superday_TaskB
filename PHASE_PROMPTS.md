@@ -41,7 +41,9 @@ stock-market alpha signals. The design is frozen; your job is to build one phase
 ## ⚠️ WARNING about `PLAN_EXPLAINED.md`
 
 It deliberately **preserves superseded text** alongside "UPDATE" / "SUPERSEDED" callouts, so the
-reasoning trail survives. There are 24 such markers. If you read a passage there without reading its
+reasoning trail survives. There are 27 such markers — the Phase-6 verification pass added three
+(**G19-UPDATE** √(2 ln N) is a ceiling, **G21-UPDATE** the holdout peek scores the residual,
+**C8-UPDATE-2** deflation is run-wide and uses the effective count) plus a new **G24** entry. If you read a passage there without reading its
 callout, you may implement a decision we reversed — the old Gate B ordering (statistics before novelty),
 a 5-year Train window, or MCTS as the primary formula search are all still visible in the original text.
 

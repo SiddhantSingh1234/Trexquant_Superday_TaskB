@@ -155,6 +155,13 @@ Long format. Index reset. Sorted by `(date, symbol)`.
 ```
 
 ### The `AlphaCard` JSON — the project's output unit
+
+> **P6-UPDATE — three fields added to `audit`, and the illustrative DSR corrected.** `n_trials_effective`
+> (the cluster-adjusted, run-wide count the DSR is actually deflated by), `expected_max_sr` (the
+> Bailey-LdP deflator applied), and `holdout_scored_on` (`"residual"` — so the peek's target is
+> auditable, not assumed). The example previously showed `deflated_sharpe: 0.9` on an *accepted* card,
+> which sits below the `DSR_MIN = 0.95` bar Phase 6 enforces; the example now reads 0.97. Gate B's full
+> audit dict is a superset of this block — see `reports/p6_handoff.md`.
 ```json
 {"card_id":"...", "thesis_id":"...", "generation":3,
  "thesis":{"mechanism":"...","counterparty":"...","why_not_arbitraged":"...",
@@ -163,8 +170,9 @@ Long format. Index reset. Sorted by `(date, symbol)`.
  "formula":"rank(ts_mean(volume,1)/ts_mean(volume,20))*sign(delay(close,1)-close)",
  "ast_canonical":"...", "complexity":{"nodes":11,"depth":4,"free_params":2},
  "tier1_metrics":{}, "fresh_fold_metrics":{}, "tier2_metrics":{},
- "audit":{"marginal_ic":0.025,"deflated_sharpe":0.9,"t_stat":3.2,"pbo":0.18,
-          "n_trials_global":143,"n_trials_within_thesis":7,"holdout_peek_id":4},
+ "audit":{"marginal_ic":0.025,"deflated_sharpe":0.97,"t_stat":3.2,"pbo":0.18,
+          "n_trials_global":143,"n_trials_within_thesis":7,"n_trials_effective":31,
+          "expected_max_sr":0.061,"holdout_peek_id":4,"holdout_scored_on":"residual"},
  "redteam":{"tests_run":["subsample_year","regime_split"],"results":{},"verdict":"survives"},
  "verdict":"accept", "lineage":{"parent_card_id":null,"edit_motif":null},
  "provenance":{"fields_used":["volume","close"]}}
@@ -972,21 +980,59 @@ marginal IC, and the rationed holdout.
 
 ## Standalone context
 
-> **The core problem.** If you test **N worthless** signals, the best one's t-statistic will be about
+> **The core problem.** If you test **N worthless** signals, the best one's t-statistic will be of order
 > **√(2 ln N)** *purely by chance*: **N=20 → 2.45 · N=100 → 3.03 · N=200 → 3.26.** At 200 attempts, your
 > best formula clears a "t > 3" bar with nothing there at all. Every gate here exists to price that in.
+
+> ⚠️ **P6-UPDATE (measured) — √(2 ln N) is a CEILING, not the expected best t-stat.** It is the
+> asymptotic upper bound on the maximum of N standard normals. The **realised** maximum centres about
+> **0.5 lower**, and it is the realised maximum the gate must actually beat. Monte Carlo, 20,000 draws
+> per N:
+>
+> | N | realised E[max] | √(2 ln N) | Bailey-LdP E[max] |
+> |---|---|---|---|
+> | 5 | 1.168 | 1.794 | 1.193 |
+> | 20 | 1.868 | 2.448 | 1.901 |
+> | 200 | **2.744** | 3.255 | 2.766 |
+> | 500 | 3.038 | 3.526 | 3.053 |
+>
+> The number that actually justifies every gate here is the **tail**, not the mean:
+> **P(best-of-N pure-noise t-stat > 3.0)** = **0.7%** at N=5 · **2.7%** at N=20 (our variant cap) ·
+> **12.6%** at N=100 · **23.6%** at N=200 · **49.1%** at N=500 (200,000 Monte-Carlo searches per
+> point). At 500 variants a "t > 3" bar is a **coin flip against pure noise**.
+>
+> Two consequences, both load-bearing:
+> 1. **The deflator is Bailey-López de Prado `E[max SR]`, never √(2 ln N).** BLdP tracks the true order
+>    statistic to ~0.03; the bound overshoots by ~0.5. Deflating by the bound over-rejects genuine
+>    signals — measured: a real signal found in 5 trials with **t = 7.07** scores **DSR 0.9952 (pass)**
+>    under BLdP and **DSR 0.6579 (reject)** under a √(2 ln N) deflator.
+> 2. **The headline acceptance test's band is 2.5–4.2, not "≈3.3".** The realised best-of-200-noise
+>    t-stat measures **2.74**; a band centred on 3.26 would fail on correct code.
+>
+> Use "**of order** √(2 ln N)" in the write-up and slides, and quote 2.74 as the measured value with
+> 3.26 named as the ceiling. The load-bearing claim is unchanged and unweakened: *the Deflated Sharpe
+> must reject the best of 200 noise signals*, and it does — **DSR 0.477**.
 
 **Gate B runs in this exact order, and the order is load-bearing:**
 1. **Orthogonalize** against the existing factor book → the *residual* signal.
 2. **Novelty** — is the residual's marginal IC meaningful? Kill clones here.
 3. **Statistics** — Deflated Sharpe **on the residual**, t > 3, PBO.
-4. **Rationed holdout peek** — only now, and it is counted.
+4. **Rationed holdout peek** — only now, it is counted, and it scores the **residual**.
 
 *Why novelty first:* step 4 spends an **irreplaceable** holdout peek while step 2 is free and already
 computed. Never spend a peek on a signal that is about to be rejected as a momentum clone.
 *Why the residual:* the fitness object was always *"deflated, holdout-gated, **orthogonalized marginal**
 IC"* — one composite. Deflating the raw signal and *separately* glancing at marginal IC is a different,
 weaker calculation.
+
+> **P6-UPDATE — the residual rule binds step 4 as well, not only step 3.** The rationed peek scores the
+> **residual**, the same object steps 2–3 judged. Peeking on the raw signal lets a *partial clone* — one
+> with real but small marginal IC and most of its raw IC explained by the book — be confirmed on
+> HOLDOUT by the very book it was supposed to be measured against, and it leaves the "did it collapse
+> out of sample?" check comparing a **raw** holdout IC against a **residual** VAL IC, mixed units that
+> can never bite. Measured on such a partial clone: raw holdout RankIC **0.0320**, residual holdout
+> RankIC **0.0196** — a peek on the raw signal overstates the surviving edge by **63%**, and it spends
+> an irreplaceable peek to do it.
 
 ## Inputs
 - `src/backtester.py` from P4 *(if missing, stub it: a function returning a `Metrics` dict with
@@ -1022,10 +1068,30 @@ API: `record_trial(...)`, `n_trials(thesis_id=None)`, `trial_sharpes(thesis_id=N
 maybe 3 independent bets, not 20. Cluster by canonical-AST similarity **and** by correlation of the
 trial Sharpes; return an effective count.
 
+> **P6-UPDATE — two rules that make this count real.**
+> 1. **The DSR must be handed the effective count, not `max(effective, raw N)`.** Since `n_eff ≤ N` by
+>    construction, taking that max silently restores raw N and this whole step becomes decorative.
+>    Measured: 20 knob-variants of one shape → **effective count 2.0**, raw 20.
+> 2. **Scope is the WHOLE ledger, with the thesis as a floor.** P10 promotes the best card *across*
+>    theses, so the population the winner was maximised over is the run-wide one. Deflating only
+>    within the thesis gives a brand-new thesis **N = 1 → E[max SR] = 0 → no deflation at all**, however
+>    much search preceded it — the exact hole this phase exists to close. Measured: 40 noise variants
+>    searched under 40 different thesis_ids, winner gated under a fresh 41st thesis. Its raw t-stat is
+>    **−3.000** — it clears the naive `t > 3` bar from pure noise. Thesis-local scope → E[max SR] = 0,
+>    DSR = 1.000, **accept**. Run-wide scope → effective N = 41, E[max SR] = **0.0728**, DSR = **0.789**,
+>    **reject**. Report both counts on the card (`n_trials_within_thesis`, `n_trials_global`).
+
 **3. Deflated Sharpe Ratio** (Bailey & López de Prado). Inputs: observed Sharpe, number of trials,
 variance of the trial Sharpes, skew and kurtosis of the return series, sample length. Returns a
 probability that the true Sharpe exceeds zero. Include the standard expected-maximum-Sharpe term
 `E[max] ≈ σ_SR × ((1−γ)Z⁻¹(1−1/N) + γZ⁻¹(1−1/(N·e)))`.
+
+> **P6-UPDATE — floor `σ²_SR` at `1/T`.** A sample of trial Sharpes cannot honestly be *less* dispersed
+> than pure estimation noise, and `σ_SR = 0` (identical or near-identical trial SRs — common early in a
+> run) collapses `E[max SR]` to 0 and switches deflation **off** exactly when a thin ledger makes it
+> most needed. `1/T` is the asymptotic sampling variance of a zero-mean IR estimate; it is also the
+> fallback when fewer than two prior trials exist. Measured: 40 identical trial IRs at N=100, T=900 →
+> `E[max SR]` **0.0 before, 0.0844 after**.
 
 **3b. Walk-forward validation — the workhorse (decision C9).**
 Walk-forward is the *primary* out-of-sample method; CSCV exists only to produce one honest PBO number.
@@ -1048,8 +1114,15 @@ embargo inside every split.
 cross-sectionally each day; keep the residual; compute the residual's RankIC. Handle an empty book
 (marginal IC = raw IC).
 
-**6. `gate_b(card, book, ledger)`** — runs steps 1–4 of the Gate B order above and returns
+**6. `gate_b(card, book, ledger, signal=…)`** — runs steps 1–4 of the Gate B order above and returns
 `(verdict, reasons, audit_dict)`.
+
+> **P6-UPDATE — the evaluated `signal` is a required fourth argument.** A card carries a `formula`
+> *string*, not values, and Gate B cannot evaluate it from either of its other two arguments: P5's
+> parser accepts only base OHLCV fields (`close, volume, high, low, open, vwap, returns, …`) — the P3
+> feature panel contains **none** of them (`ParseError: unknown field: 'mom_21'`), and the prices they
+> need live in a third file, `data/prices/ohlcv.parquet`, that Gate B is not given. Evaluation is
+> P10's job; Gate B judges the evaluated frame. Accepted as `signal=` or as `card["_signal"]`.
 
 **7. Pre-registered sign check.** `check_sign(pre_registered_sign, realized_sign) -> bool`.
 A mismatch is a **thesis failure**, not an invitation to flip the sign. This is a hard reject.
@@ -1057,13 +1130,28 @@ A mismatch is a **thesis failure**, not an invitation to flip the sign. This is 
 ## Acceptance
 - [ ] Ledger is append-only; module contains no `DELETE`.
 - [ ] `request_holdout_peek` returns a token exactly `HOLDOUT_PEEK_BUDGET` times, then `None` forever.
-- [ ] **The headline test:** generate 200 pure-noise signals, take the best. Its raw t-stat should be
-      ≈ 3.3 (validating √(2 ln N)); the **Deflated Sharpe must reject it**.
+- [ ] **The headline test:** generate 200 pure-noise signals, take the best. Its raw t-stat should land
+      in **2.5–4.2** — of order √(2 ln 200) = 3.26, which is the *ceiling*; the realised value measures
+      **2.74** (see the P6-UPDATE above). The **Deflated Sharpe must reject it**.
 - [ ] A genuinely predictive signal found in 5 trials passes the same gate.
-- [ ] Effective trial count for 20 near-identical formulas is materially below 20.
+- [ ] Effective trial count for 20 near-identical formulas is materially below 20, **and that count is
+      what the DSR is deflated by** (not raw N).
+- [ ] Deflation is scoped to the **whole ledger**: a noise winner selected across 40 theses is rejected
+      even when gated under a brand-new thesis whose own trial count is 0.
+- [ ] The **rationed peek scores the residual**, not the raw signal.
 - [ ] PBO ≈ 0.5+ for noise; low for a real signal.
 - [ ] Marginal IC of a factor against *itself* as the book is ≈ 0.
 - [ ] `check_sign(+1, -1)` is `False`.
+
+## Thresholds (fixed here so P10 and the slides quote one set)
+`T_STAT_BAR = 3.0` (config, spec-given). The rest were open and are now pinned:
+
+| Constant | Value | Basis |
+|---|---|---|
+| `MIN_MARGINAL_IC` | 0.01 | Novelty floor. Measured sampling noise of a daily-IC mean over VAL_A (T = 913): **0.00436**, so 0.01 is **2.3σ** — above float-residual noise, below genuine marginal alpha (0.02–0.03). |
+| `DSR_MIN` | 0.95 | Bailey-LdP's own convention. **Note:** the illustrative AlphaCard in §0.5 shows `deflated_sharpe: 0.9` with `verdict: accept`; that example is not a threshold, and 0.95 governs. |
+| `PBO_MAX` | 0.50 | PBO > 0.5 is worse than a coin. Measured null: **0.486 ± 0.013** over 300 noise matrices. |
+| `MIN_DSR_SAMPLE` | 60 | Below ~60 scored days the skew/kurtosis terms in the DSR denominator are unreliable. |
 
 ## Do NOT
 Do not call an LLM. Do not implement the red-team menu (Phase 9). Do not read HOLDOUT except through

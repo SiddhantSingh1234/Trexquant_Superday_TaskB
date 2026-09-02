@@ -172,6 +172,29 @@
   >
   > **Within-thesis, not only global:** deflation for a promoted finalist uses the count of variants
   > tried *inside its own thesis*, not just the run-wide total (see G19).
+  >
+  > **C8-UPDATE-2 (NEW, from the P6 verification pass) — "not only global" was implemented as "only
+  > within-thesis", and that is a hole big enough to drive the whole failure mode through.**
+  > The Orchestrator promotes the best card *across* theses, so the population the winner was
+  > maximised over is the **run-wide** one. Scoping deflation to the thesis gives a brand-new thesis
+  > **N = 1 → E[max SR] = 0 → no deflation whatsoever**, no matter how much search preceded it: spawn a
+  > fresh thesis_id and the meter reads zero. **Fix: deflate on the effective count over the whole
+  > ledger, with the within-thesis count kept as a floor; report both on the card.**
+  >
+  > Measured — 40 noise variants searched under 40 *different* thesis_ids, the winner then gated under
+  > a fresh 41st thesis. Its raw t-stat is **−3.000**: it clears the naive `t > 3` bar from pure noise.
+  >
+  > | Deflation scope | effective N | E[max SR] | DSR | verdict |
+  > |---|---|---|---|---|
+  > | within-thesis only (the bug) | 1 | 0.0000 | 1.000 | **accept** ❌ |
+  > | run-wide (the fix) | 41 | 0.0728 | 0.789 | **reject** ✅ |
+  >
+  > **A second, quieter bug in the same line:** the effective count was combined as
+  > `max(effective, raw N)`. Since `effective ≤ N` by construction that is *always* raw N — the
+  > cluster-adjustment of this very decision was computed and then thrown away. Measured: 20
+  > knob-variants of one AST shape → effective **2.0**, but the DSR was being handed **20**. Fixed to
+  > use the effective count directly. This is the number behind *"LLM-guided search tries fewer trials
+  > → smaller penalty"*, so it has to actually reach the deflator.
 
 - **C9 · CPCV vs walk-forward → prototype uses walk-forward as the workhorse + a small CSCV for one
   honest PBO number; full CPCV stays the production standard in the design.** Walk-forward (expanding
@@ -318,6 +341,34 @@ computation*. Verdict math stays un-gameable code (our edge vs naive "LLM-as-jud
   chosen so the cluster-adjusted effective N leaves headroom for a genuine signal. Every variant enters
   the ledger (C8).
 
+  > **G19-UPDATE (NEW, measured in the P6 verification pass) — √(2 ln N) is a CEILING, not the expected
+  > best t-stat.** It is the asymptotic upper bound on the maximum of N standard normals; the realised
+  > maximum centres about **0.5 lower**, and it is the realised maximum a gate has to beat.
+  > Monte Carlo, 20,000 draws per N:
+  >
+  > | N | realised E[max] | √(2 ln N) | Bailey-LdP E[max] |
+  > |---|---|---|---|
+  > | 5 | 1.168 | 1.794 | 1.193 |
+  > | 20 | **1.868** | 2.448 | 1.901 |
+  > | 200 | **2.744** | 3.255 | 2.766 |
+  > | 500 | 3.038 | 3.526 | 3.053 |
+  >
+  > **This does not weaken the argument for the cap — it sharpens it.** The number that actually makes
+  > the case is not the mean but the *tail*: **P(best-of-N pure-noise t-stat > 3)** = 2.7% at N=20,
+  > 12.6% at N=100, **23.6% at N=200, 49.1% at N=500** (200k Monte-Carlo searches per point). At 500
+  > variants the "t > 3" bar is a **coin flip against pure noise**; at our cap of 20 it is 2.7%, a bar
+  > worth having. That is G19's justification stated as a probability rather than an average. What it changes is *which
+  > number you deflate by*: the Deflated Sharpe uses the **Bailey-López de Prado `E[max SR]`** term,
+  > which tracks the true order statistic to ~0.03. A √(2 ln N) deflator would be systematically ~0.5
+  > too harsh and would **kill real signals** — measured: a genuine signal found in 5 trials with
+  > **t = 7.07** scores **DSR 0.9952 (pass)** under Bailey-LdP and **DSR 0.6579 (reject)** under
+  > √(2 ln N).
+  >
+  > **Wording for the write-up and slides:** say the best-of-N noise t-stat is "**of order** √(2 ln N)",
+  > quote the ceiling (3.26 at N=200) *and* the measured realised value (**2.74**), and state that the
+  > gate deflates by the tighter Bailey-LdP term. The headline demo is unchanged and undiminished:
+  > **best of 200 pure-noise signals → raw t = 2.74 → DSR 0.477 → rejected.**
+
 - **G20 · Fresh-fold confirmation — search plays on VAL-A; the promoted winner is confirmed on VAL-B,
   which no variant ever touched.** *Why:* this converts within-thesis selection into a genuine
   out-of-sample check **for free** — no holdout peek spent. A cap alone is a guess about the right
@@ -338,7 +389,49 @@ computation*. Verdict math stays un-gameable code (our edge vs naive "LLM-as-jud
   *better* than the incumbent. Real books handle this by **replacement, not rejection** — if marginal
   IC ≈ 0 but standalone quality dominates, the right action is **swap**.
 
-- **G22 · Trial-counting rule made explicit** — see C8-UPDATE. Selection inflates; rejection-only doesn't.
+  > **G21-UPDATE (NEW, from the P6 verification pass) — the residual rule binds step 4 too, not only
+  > step 3.** The build applied "compute on the residual" to the Deflated Sharpe and then handed the
+  > **raw** signal to the rationed holdout peek. That reintroduces exactly the split G21 was written to
+  > close, at the most expensive step in the system:
+  > - a **partial clone** — real but small marginal IC, most of its raw IC explained by the book —
+  >   clears novelty and statistics, then gets **confirmed on HOLDOUT by the very book it was supposed
+  >   to be measured against**;
+  > - and the "did it collapse out of sample?" check ends up comparing a **raw** holdout IC against a
+  >   **residual** VAL IC — mixed units, so it can never bite.
+  >
+  > Measured on such a partial clone: raw holdout RankIC **0.0320** vs residual holdout RankIC
+  > **0.0196**. Peeking on the raw signal overstates the surviving edge by **63%** — and spends an
+  > irreplaceable peek to do it. **Fixed: step 4 scores the residual.** The card records
+  > `holdout_scored_on: "residual"` so the choice is auditable rather than assumed.
+  >
+  > The general principle, worth one slide line: *"deflated, holdout-gated, orthogonalized marginal
+  > IC" is one composite object — **every** step of Gate B has to be looking at the same object.*
+
+- **G22 · Trial-counting rule made explicit** — see C8-UPDATE / C8-UPDATE-2. Selection inflates;
+  rejection-only doesn't; and the count is **effective, run-wide**.
+
+- **G24 · The honesty machinery gets audited the way a signal does (NEW, from the P6 verification
+  pass).** Phase 6 shipped with **25 green tests and 8/8 acceptance criteria met**, and still had four
+  statistical defects — and **three of the four leaned the same way: towards accepting things.**
+  | # | Defect | Where it is now written down | Direction |
+  |---|---|---|---|
+  | A | Rationed peek scored the raw signal, not the residual | G21-UPDATE | **too permissive** |
+  | B | Deflation scoped to the thesis, so a fresh thesis got none | C8-UPDATE-2 | **too permissive** |
+  | D | `max(effective, raw N)` silently discarded the cluster adjustment | C8-UPDATE-2 | too *harsh* |
+  | E | `σ_SR = 0` from identical trial SRs switched deflation off | `IMPLEMENTATION_PLAN` P6 step 3 | **too permissive** |
+
+  (A fifth, an unbounded `id()`-keyed cache, was an engineering leak rather than a statistical one —
+  `reports/p6_handoff.md` §5 finding C.)
+
+  *Why this belongs in the decision log:* **a passing test suite proves the code does what the tests
+  say, not what the design says.** Every one of these was invisible to the spec's acceptance criteria
+  because those criteria test each statistic **in isolation**, while all four defects lived in **how the
+  statistics were wired together** — which object the peek looks at, which population the deflator is
+  charged against, whether the effective count reaches the deflator at all. The fix that generalises:
+  for a gate, write at least one test per **load-bearing claim** ("the peek judges the same object the
+  DSR judged", "deflation sees the run, not the thesis"), not only one per function. And a leaning
+  matters more than a count: **defects that cluster on the permissive side are the ones this whole
+  project exists to catch — in signals, and evidently in the build too.**
 
 - **G23 · MCTS and code-based evolution → moved to the ROADMAP (supersedes part of the Search-policy
   entry above).**

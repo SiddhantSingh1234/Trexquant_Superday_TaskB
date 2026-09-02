@@ -345,9 +345,33 @@ comfortably below the 3.0 bar, so a real signal still has to earn its way past.
 > honesty maths: **the more you tried, the higher the bar a survivor must clear.** Backtests are free in
 > money and nearly free in time, but they are *not* free here.
 
+**How badly does this bite? We measured it.** Take N *completely worthless* signals, keep the best one,
+and ask how often it clears the "t-stat above 3" bar that a quant would normally call convincing:
+
+| Things you tried | Chance the best one clears "t > 3" — **on pure noise** |
+|---|---|
+| 5 | 0.7% |
+| **20** *(our hard cap)* | **2.7%** |
+| 100 | 12.6% |
+| 200 | 23.6% |
+| 500 | **49.1%** |
+
+At 500 attempts the bar is a **coin flip**. That is the whole problem in one line: *the more you look,
+the less a good-looking result means* — and nothing about the result itself tells you which case you
+are in. Only the count does. Hence the ledger.
+
 We count *effectively*, not naively: 20 variations of "volume divided by its k-day average" for
 k = 5…25 are not 20 independent bets — they're maybe three. The maths we use (Deflated Sharpe) handles
 this automatically, because it takes the number of trials **and how similar their results were**.
+(Measured on the built system: those 20 knob-variants come out as **2 effective bets**.)
+
+And we count **run-wide, not per-idea.** The tempting shortcut is to charge a candidate only for the
+variants tried inside *its own* thesis. But we promote the best card across *every* thesis, so that is
+the pool the winner was actually chosen from — and charging per-thesis means a brand-new idea starts
+the meter at zero no matter how much searching came before it. **Opening a new thesis must not reset
+the counter.** Measured: a noise winner selected out of 40 tries across 40 different theses arrives at
+the gate with a raw t-stat of **−3.00** — it clears the "t > 3" bar. Charged per-thesis it is
+**accepted**; charged run-wide it is **rejected** (DSR 0.79).
 
 **Fix 3 — the fresh fold. Confirm the winner on data no variant ever touched.**
 
@@ -449,6 +473,13 @@ Four steps, in this exact order. The order matters, and we changed it deliberate
 Is the leftover information meaningful? If marginal IC ≈ 0, it's a copy of something we own. Reject.
 
 #### Step 3 — The honesty maths, computed on the **leftover** signal
+
+> **And so is step 4.** Everything from here — the deflated score, the t-stat, PBO, *and* the vault
+> peek — judges the **leftover**, never the original. If the final confirmation looked at the original
+> signal, a candidate that is 60% "stuff we already own" would be confirmed by the very factors it was
+> supposed to be measured against. Measured on exactly such a candidate: the original scores **0.0320**
+> on the sealed data, the leftover **0.0196** — peeking at the original would overstate the genuinely
+> new edge by **63%**, and would burn one of only 12 lifetime peeks to do it.
 
 > 📖 **Deflated Sharpe Ratio** — a *corrected* performance number that penalises you for (a) how many
 > things you tried before finding this and (b) lumpy, non-normal returns. Try 500 formulas and a raw
@@ -585,9 +616,10 @@ RankIC 0.034. Lower than 0.041 — as expected, some of that was selection luck 
 
 **8 · Gate B** —
 Subtract our existing momentum and reversal factors → leftover marginal IC **0.025**. Genuinely new. ✓
-Ledger says 143 trials this run, 7 within this thesis. Deflated Sharpe on the leftover = **0.9** —
-still positive after the penalty. t = 3.2, clears 3.0. PBO low. ✓
-**Spend holdout peek #4 of 12.** Holds up. **Pass.**
+Ledger says 143 trials this run, 7 within this thesis — **31 effective** after clustering the
+near-duplicates. Deflated Sharpe on the leftover = **0.97** — still convincing after the penalty, and
+clear of our 0.95 bar. t = 3.2, clears 3.0. PBO low. ✓
+**Spend holdout peek #4 of 12 — on the leftover.** Holds up. **Pass.**
 
 **9 · Gate C · Red-Team** — the agent picks 6 of the 11 attacks:
 *"Is this just small caps?"* → large-cap only: holds.

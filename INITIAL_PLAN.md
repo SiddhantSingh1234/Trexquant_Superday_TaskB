@@ -104,7 +104,7 @@ flowchart TD
     FF -- fails --> S9
     FF -- holds --> S6["⚙ S6 BACKTESTER · TIER-2 BATTERY<br/>walk-forward + CSCV → PBO · decay · turnover · MDD<br/>cost sweep · purge + embargo"]:::tool
 
-    S6 --> GB{"⚙ GATE B · HONESTY (deterministic)<br/>1 orthogonalize vs book → residual<br/>2 marginal-IC novelty (kill clones)<br/>3 Deflated Sharpe ON THE RESIDUAL · t&gt;3 · PBO<br/>4 rationed HOLDOUT peek (counted)"}:::toolGate
+    S6 --> GB{"⚙ GATE B · HONESTY (deterministic)<br/>1 orthogonalize vs book → residual<br/>2 marginal-IC novelty (kill clones)<br/>3 Deflated Sharpe ON THE RESIDUAL · t&gt;3 · PBO<br/>(deflated by run-wide EFFECTIVE trial count)<br/>4 rationed HOLDOUT peek ON THE RESIDUAL (counted)"}:::toolGate
     GB -- reject --> S9
     GB -- pass --> GC{"🤖 GATE C · RED-TEAM (Opus)<br/>picks from a fixed menu of 11 stress tests<br/>run by the ⚙ backtester · rejection-only"}:::agentGate
     GC -- killed --> S9
@@ -157,7 +157,7 @@ paper lineage. Depth is one click away, not hidden.
 | S4 Gate A | Economics Reviewer 🤖 | hard rubric · author ≠ judge · sign hashed into the ledger |
 | S5 Implementation | Coder 🤖 · AST/operator ⚙ · Pre-filter ⚙ · Tier-1 ⚙ · Judge 🤖 | operator library · AST · complexity control · compile check · **structural AST novelty** · fast validation RankIC · refinement critique · within-thesis search · **+ variant cap + fresh-fold confirm + full ledger logging (new)** |
 | S6 Backtester | Tier-1 · Tier-2 · holdout · stress runs · portfolio · ablation | walk-forward · CSCV → PBO · decay · turnover/MDD/Sharpe · cost sweep · purge + embargo · **+ published interface and trial-counting rule (new)** |
-| S7 Gate B | Novelty ⚙ · Stats Auditor ⚙ · holdout ration ⚙ | marginal IC vs book · Deflated Sharpe · t>3 · PBO · trial ledger · holdout budget · **+ reordered: novelty first, DSR on the residual (new)** |
+| S7 Gate B | Novelty ⚙ · Stats Auditor ⚙ · holdout ration ⚙ | marginal IC vs book · Deflated Sharpe · t>3 · PBO · trial ledger · holdout budget · **+ reordered: novelty first, DSR on the residual (new)** · **+ the peek scores the residual too, and deflation uses the run-wide *effective* trial count (P6)** |
 | S8 Gate C | Red-Team 🤖 · test menu ⚙ | all stress tests · agent-selects / tool-computes · **+ 2 new tests, labelled rejection-only** |
 | S9 Memory | Reflection 🤖 · memory write ⚙ · ledger ⚙ | lessons · prompt updates · bandit priors · lineage graph · trial ledger |
 | *off-loop* | Portfolio ⚙ | low-correlation synergistic set · regime weight-gating |
@@ -242,19 +242,33 @@ crushing deflation penalty, and no economic thesis, which fails the prompt's min
 
 ### Why the within-thesis search is where overfitting enters
 
-If N candidates are all truly worthless, the *maximum* observed t-statistic among them grows like
-√(2 ln N):
+If N candidates are all truly worthless, the *maximum* observed t-statistic among them grows of order
+√(2 ln N). That expression is the asymptotic **ceiling**; the realised maximum sits about 0.5 below it,
+so both numbers belong on the slide — the ceiling because it is the closed form everyone quotes, the
+realised value because it is what a gate actually has to beat (Monte Carlo, 20,000 draws per N):
 
-| Variants per thesis | Expected best t-stat, from pure noise |
-|---|---|
-| 1 | ~0.0 |
-| **20** | **2.45** |
-| 100 | 3.03 |
-| **200** | **3.26** |
+| Variants per thesis | √(2 ln N) — the ceiling | **Realised best t-stat** | **P(best t-stat > 3) from pure noise** |
+|---|---|---|---|
+| 1 | 0.00 | ~0.0 | 0.1% |
+| 5 | 1.79 | 1.17 | 0.7% |
+| **20** *(our cap)* | **2.45** | **1.87** | **2.7%** |
+| 100 | 3.03 | 2.50 | 12.6% |
+| **200** | **3.26** | **2.74** | **23.6%** |
+| 500 | 3.53 | 3.04 | **49.1%** |
 
-At 200 variants, the best formula clears the t > 3 bar **by construction**. And the pre-registered
-sign gives no protection here — every variant inherits the thesis's sign, so the check passes
-trivially for all of them.
+*(200,000 Monte-Carlo searches per row.)* **The last column is the whole argument.** At 500 variants a
+pure-noise search clears the "t > 3" bar **half the time** — the bar carries no information at all. At
+200 it is nearly one search in four. At our 20-variant cap it is 2.7%, which is a bar worth having.
+Our own build hit this live: a best-of-40 noise winner arrived at Gate B with **t = −3.00** exactly.
+
+And the pre-registered sign gives no protection here — every variant inherits the thesis's sign, so the
+check passes trivially for all of them.
+
+> **The deflator uses the realised quantity, not the ceiling.** The Deflated Sharpe's `E[max SR]` term
+> (Bailey & López de Prado) tracks the true order statistic to ~0.03. Deflating by √(2 ln N) instead
+> would be ~0.5 too harsh and would reject real signals — measured: a genuine signal found in 5 trials
+> with **t = 7.07** scores **DSR 0.9952 (pass)** under Bailey-LdP, **0.6579 (reject)** under
+> √(2 ln N). See `PLAN_EXPLAINED.md` **G19-UPDATE**.
 
 ### The three bindings that fix it
 
