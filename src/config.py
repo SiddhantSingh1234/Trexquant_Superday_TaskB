@@ -78,6 +78,59 @@ SPLITS_JSON_PAYLOAD: dict[str, list[str]] = {
 
 HOLDOUT_START: pd.Timestamp = SPLITS["holdout"][0]
 
+# --------------------------------------------------------------------------- #
+# Phase 8 — LLM agents: corpus paths, model routing, free-tier budget          #
+# --------------------------------------------------------------------------- #
+import os as _os  # noqa: E402  (kept local to this section)
+
+CORPUS_DIR: Path = DATA_DIR / "corpus"
+ANOMALIES_JSON: Path = CORPUS_DIR / "anomalies.json"
+AGENT_PROMPTS_DIR: Path = SRC_DIR / "agents" / "prompts"
+LLM_BUDGET_STATE_JSON: Path = DATA_DIR / "llm_budget_state.json"
+
+# LLM_MODE: "mock" (offline canned responses — no key, the test default)
+#         | "live"  (Groq free tier, needs GROQ_API_KEY)
+#         | "offline" (local Ollama, zero-limit, no network egress)
+LLM_MODE: str = (_os.environ.get("LLM_MODE", "mock").strip().lower() or "mock")
+GROQ_API_KEY: str = _os.environ.get("GROQ_API_KEY", "").strip()
+OLLAMA_HOST: str = _os.environ.get("OLLAMA_HOST", "http://localhost:11434").strip()
+
+# ⚠️ NEVER hard-code a model ID.  PRE_BUILD_TASKS.md T3: `llama-3.3-70b-versatile`
+# and `llama-3.1-8b-instant` were reportedly deprecated 2026-06-17 (sources
+# conflict with Groq's own models page).  Read the tier's ordered fallback chain
+# from here and probe availability at startup, walking down the list.
+LLM_MODEL_CHAINS: dict[str, tuple[str, ...]] = {
+    "large": ("openai/gpt-oss-120b", "qwen/qwen3-32b", "llama-3.3-70b-versatile"),
+    "small": ("openai/gpt-oss-20b", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"),
+    "offline": ("qwen2.5-7b", "llama3.1", "phi3"),
+}
+
+# Role -> model tier.  Hypothesis and Red-Team get the reasoning model; the
+# high-volume cheap roles (Coder/Judge ~11 of 16.6 calls/thesis) get the small.
+LLM_ROLE_TIER: dict[str, str] = {
+    "hypothesis": "large", "redteam": "large",
+    "coder": "small", "judge": "small", "reflection": "small",
+    "planner": "small", "librarian": "small", "economics": "small",
+}
+
+# Free-tier limits per ORGANISATION (extra keys do not multiply capacity),
+# PRE_BUILD_TASKS.md T3.  Conservative: the gpt-oss row (TPM 8k, TPD 200k).
+# Tokens-per-day is the binding constraint, not requests.
+LLM_TPM: dict[str, int] = {"large": 8_000, "small": 8_000, "offline": 1_000_000}
+LLM_TPD_CAP: dict[str, int] = {"large": 200_000, "small": 200_000, "offline": 10_000_000}
+LLM_RPM: dict[str, int] = {"large": 30, "small": 30, "offline": 600}
+
+# The eight agent roles (deterministic code — backtester, stats, novelty — is NOT
+# an agent and does not appear here).
+AGENT_ROLES: tuple[str, ...] = (
+    "planner", "librarian", "hypothesis", "economics",
+    "coder", "judge", "redteam", "reflection",
+)
+
+# Measured projection (PRE_BUILD_TASKS.md T3 / IMPLEMENTATION_PLAN.md Phase 8):
+# ~16.6 LLM calls and ~26,500 tokens per thesis.  ~20 theses/day is the ceiling.
+LLM_TOKENS_PER_THESIS_PROJECTION: int = 26_500
+
 # Composite regions the backtester (P4) accepts.
 _COMPOSITE_REGIONS: dict[str, tuple[str, ...]] = {
     "train+val_a": ("train", "val_a"),
