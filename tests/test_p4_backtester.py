@@ -215,8 +215,6 @@ def test_decay_curve_decays_for_the_planted_signal(planted_signal):
 @pytest.mark.parametrize("sub", [
     {"years": [2018, 2019]},
     {"size_tercile": "large"},
-    {"regime": "bull"},
-    {"regime": "bear"},
     {"min_turnover": 1e6},
     {"exclude_symbols": ["SYM001", "SYM002"]},
 ])
@@ -225,6 +223,61 @@ def test_subsample_switches_run_and_shrink_the_panel(planted_signal, sub):
     m = bt.backtest(planted_signal, "val_a", subsample=sub)
     assert m["n_obs"] <= full["n_obs"]
     assert np.isfinite(m["rank_ic"])
+
+
+def _trending_labels(n_days=N_DAYS, n_symbols=N_SYMBOLS, seed=SEED):
+    """`make_fake_labels` with a market cycle added to the *raw* forward returns.
+
+    The demeaned labels (the actual target) are untouched — a common per-day
+    term cancels under cross-sectional demeaning — so RankIC behaviour is
+    preserved, but the equal-weight market proxy now sweeps through genuine
+    bull / bear / high-vol regimes.
+    """
+    labs = C.make_fake_labels(n_days, n_symbols, seed)
+    dates = np.sort(labs["date"].unique())
+    t = np.arange(len(dates))
+    cycle = dict(zip(dates, 0.004 * np.sin(2 * np.pi * t / 240.0)))
+    add = labs["date"].map(cycle).to_numpy()
+    for h in (1, 2, 3, 5, 10, 21):
+        labs[f"fwd_ret_{h}"] = (labs[f"fwd_ret_{h}"].to_numpy() + add).astype(np.float64)
+    return labs
+
+
+@pytest.mark.parametrize("regime", list(bt.VALID_REGIMES))
+def test_regime_subsamples_run_on_a_trending_market(planted_signal, regime):
+    """Every regime label populates and shrinks the panel on a market with a
+    real cycle (the flat synthetic market rarely crosses +/-5%)."""
+    feats = C.make_fake_features(n_days=N_DAYS, n_symbols=N_SYMBOLS, seed=SEED)
+    bt.use_panel(feats, _trending_labels())
+    try:
+        full = bt.backtest(planted_signal, "train+val_a")
+        m = bt.backtest(planted_signal, "train+val_a", subsample={"regime": regime})
+        assert 0 < m["n_obs"] <= full["n_obs"], (regime, m["n_obs"], full["n_obs"])
+        assert np.isfinite(m["rank_ic"])
+    finally:
+        bt.use_panel(
+            C.make_fake_features(n_days=N_DAYS, n_symbols=N_SYMBOLS, seed=SEED),
+            C.make_fake_labels(n_days=N_DAYS, n_symbols=N_SYMBOLS, seed=SEED),
+        )
+
+
+def test_unknown_regime_raises(planted_signal):
+    with pytest.raises(ValueError):
+        bt.backtest(planted_signal, "val_a", subsample={"regime": "sideways"})
+
+
+def test_regime_labels_are_expanding_window_only():
+    """Truncating the future must not move a single past regime label — the
+    tripwire against a full-sample volatility / return threshold (a look-ahead)."""
+    labs = _trending_labels()
+    full = bt._regime_labels(labs)
+    cut = np.sort(labs["date"].unique())[: int(labs["date"].nunique() * 0.55)]
+    trunc = bt._regime_labels(labs[labs["date"].isin(cut)])
+    assert full.loc[trunc.index].equals(trunc)
+    # and the labels are actually populated (the test above would pass vacuously
+    # on an all-False frame)
+    assert full["bull"].sum() > 20 and full["bear"].sum() > 20
+    assert full["highvol"].sum() > 20
 
 
 def test_neutralize_sector_runs(planted_signal):

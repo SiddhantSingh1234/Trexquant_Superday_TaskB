@@ -234,24 +234,69 @@ def _daily_ic(df: pd.DataFrame, xcol: str, ycol: str, spearman: bool) -> pd.Seri
     return (prod / (cnt - 1)).replace([np.inf, -np.inf], np.nan).dropna()
 
 
-def _regime_mask(labels: pd.DataFrame, regime: str) -> pd.Series:
-    """Map each date to a bull/bear/calm/volatile flag from the EW-universe path.
+#: Regimes selectable via ``subsample={"regime": ...}``.  ``highvol`` is the
+#: expanding top-tercile band the red-team (Phase 9) stresses.
+VALID_REGIMES = ("bull", "bear", "calm", "volatile", "highvol")
+
+
+def _expanding_quantile(v: np.ndarray, q: float, min_obs: int) -> np.ndarray:
+    """``out[i]`` = the ``q``-quantile of the finite values in ``v[:i+1]``.
+
+    A tight prefix loop — ``pandas`` ``Expanding.quantile`` is O(n²) with
+    crippling per-window overhead.  Strictly expanding: ``out[i]`` never sees
+    ``v[i+1:]``, so truncating the future cannot move a past value.
+    """
+    out = np.full(len(v), np.nan)
+    seen: list[float] = []
+    for i, x in enumerate(v):
+        if np.isfinite(x):
+            seen.append(x)
+        if len(seen) >= min_obs:
+            out[i] = float(np.quantile(seen, q))
+    return out
+
+
+def _regime_labels(labels: pd.DataFrame) -> pd.DataFrame:
+    """Per-date market-regime flags — **EXPANDING WINDOW ONLY**.
 
     Market proxy = equal-weight mean of ``fwd_ret_1`` across the in-panel names
-    that day.  ``bull``/``bear`` split on the trailing-63-day cumulative market
-    return; ``calm``/``volatile`` split on the trailing-21-day market-return std
-    vs its own full-window median.
+    that day.  Every flag at date *d* uses only market history up to and
+    including *d*, so truncating the future never changes a past label (a
+    full-sample threshold would be look-ahead — see
+    ``tests/test_p4_backtester.py::test_regime_labels_are_expanding_window_only``).
+
+    * ``bull`` / ``bear`` — trailing 63-day **compounded** market return
+      ``> +5%`` / ``< -5%`` (the band between the two is neither).
+    * ``calm`` / ``volatile`` — trailing 21-day realized vol ``<=`` / ``>`` its
+      own **expanding median**.
+    * ``highvol`` — trailing 21-day realized vol ``>=`` its own **expanding
+      top tercile**.  (Phase 9's red-team regime-split test consumes this one.)
     """
     mkt = labels.groupby("date")["fwd_ret_1"].mean().sort_index()
-    if regime in ("bull", "bear"):
-        trail = mkt.rolling(63, min_periods=21).sum()
-        flag = np.where(trail >= 0, "bull", "bear")
-    elif regime in ("calm", "volatile"):
-        vol = mkt.rolling(21, min_periods=10).std()
-        flag = np.where(vol <= vol.median(), "calm", "volatile")
-    else:
-        raise ValueError(f"unknown regime {regime!r}")
-    return pd.Series(flag, index=mkt.index)
+    mkt.index = pd.DatetimeIndex(pd.to_datetime(mkt.index)).normalize()
+
+    cum63 = (1.0 + mkt).rolling(63, min_periods=40).apply(np.prod, raw=True) - 1.0
+    vol21 = mkt.rolling(21, min_periods=10).std(ddof=1)
+    med = pd.Series(_expanding_quantile(vol21.to_numpy(), 0.5, 40), index=mkt.index)
+    ter = pd.Series(_expanding_quantile(vol21.to_numpy(), 2.0 / 3.0, 40), index=mkt.index)
+
+    return pd.DataFrame(
+        {
+            "bull": (cum63 > 0.05).fillna(False),
+            "bear": (cum63 < -0.05).fillna(False),
+            "calm": (vol21 <= med).fillna(False),
+            "volatile": (vol21 > med).fillna(False),
+            "highvol": (vol21 >= ter).fillna(False),
+        },
+        index=mkt.index,
+    )
+
+
+def _regime_mask(labels: pd.DataFrame, regime: str) -> pd.Series:
+    """Boolean Series over dates — ``True`` where ``regime`` holds that day."""
+    if regime not in VALID_REGIMES:
+        raise ValueError(f"unknown regime {regime!r}; valid: {list(VALID_REGIMES)}")
+    return _regime_labels(labels)[regime]
 
 
 def _apply_subsample(
@@ -292,8 +337,9 @@ def _apply_subsample(
         p = p[p["turnover_rupees"] >= thr].drop(columns="turnover_rupees")
 
     if "regime" in subsample:
-        flag = _regime_mask(labels, subsample["regime"])
-        p = p[p["date"].map(flag) == subsample["regime"]]
+        flag = _regime_mask(labels, subsample["regime"])   # bool Series by date
+        keep = set(flag.index[flag.to_numpy()])
+        p = p[p["date"].isin(keep)]
 
     return p
 
@@ -336,8 +382,9 @@ def backtest(
                   absolute weight change (both legs of the book).
     neutralize    ``None`` or ``"sector"`` (demean the signal within sector first).
     subsample     optional filter: ``{"years":[...]}``, ``{"size_tercile":...}``,
-                  ``{"regime":...}``, ``{"min_turnover":...}``,
-                  ``{"exclude_symbols":[...]}``.
+                  ``{"regime": "bull"|"bear"|"calm"|"volatile"|"highvol"}``
+                  (expanding-window labels — see :func:`_regime_labels`),
+                  ``{"min_turnover":...}``, ``{"exclude_symbols":[...]}``.
     purge_days    label-overlap purge distance; defaults to ``horizon``.
     embargo_days  embargo distance after the eval window (trading days).
     i_have_a_peek_token

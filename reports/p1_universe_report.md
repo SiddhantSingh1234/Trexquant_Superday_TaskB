@@ -59,6 +59,10 @@ Survivorship-free by construction: selection uses only trailing information as o
 
 The rank-200 turnover cutoff is the liquidity floor; it should drift upward over the sample.
 
+### liquidity_ranks.parquet
+
+Per-symbol trailing-turnover ranking, one row per (month_end, symbol) among each month's top-200 picks (`month_end · symbol · liquidity_rank · trailing_turnover`; rank 1 = most liquid). This is the same ranking that fixes `turnover_cutoff_200` above; **Phase 9's red-team reads it** to identify the names ranked 150–200 that month (`universe_edge` test) instead of recomputing.
+
 ## 5. Index-overlap diagnostic (context only — never a selection input)
 
 - Our union: 581 symbols; our current-day universe: 200.
@@ -106,3 +110,4 @@ Linear trend slope: **2.6214e-17** members/day (0.000/year). Near-zero => no sur
 - SERIES filter ['BE', 'EQ']: kept 4,988,593 / 4,988,593 rows
 - daily panel: 2697 trading days (2015-02-02..2025-12-31) x 586 ever-selected symbols; forward-filled from each monthly selection
 - a stock that stops trading mid-month keeps in_universe==True until the next selection; it has no price rows so P3's join drops it
+- liquidity_ranks.parquet: 26,395 rows (132 months x up to 200 names), per-symbol trailing-turnover rank read by P9 universe_edge; dropped 5 name(s) only in the unapplied final selection: ['CUPID', 'GMRAIRPORT', 'HBLENGINE', 'NEULANDLAB', 'VMM']

@@ -538,13 +538,22 @@ never writes free-form code.
 | 8 | Filter out illiquid names | "you couldn't actually trade this" |
 | 9 | Decay curve across holding periods | "the claimed horizon is fiction" |
 | 10 | Is the direction stable across time slices? | "the sign flips around" |
-| 11 | Re-run with known data defects removed | "it depends on a data bug" |
+| 11 | Re-run excluding the names ranked 150–200 by liquidity that month | "it only works on the illiquid fringe" |
 
-**It survives only if** the signal stays positive and meaningful through the core attacks, and does not
-collapse under the extra delay or under realistic trading costs.
+**It survives only if** the signal stays positive and meaningful through the *decisive* attacks (1, 2,
+4, 5, 10) — and does not collapse under the extra delay or under realistic trading costs. The other six
+attacks are *diagnostic*: they run and report what they found, but they don't kill on their own. The
+agent chooses which diagnostics to add; **it can never opt out of the five decisive falsifiers** — a
+gate a candidate can skip is not a gate.
 
-> 📖 **Regime** — a type of market environment: bull vs bear, calm vs panicky, high vs low rates. A
-> signal that only worked in the 2021 bull run isn't robust; it's a memory of one market.
+> 📖 **Regime** — a type of market environment: bull vs bear, calm vs panicky. The bull/bear split is
+> the trailing-63-day market return crossing ±5%; "high-vol" is the trailing-21-day volatility above
+> its own top-third *so far* (never the whole history — that would be peeking at the future). A signal
+> that only worked in the 2021 bull run isn't robust; it's a memory of one market.
+>
+> 📖 **"Loses money net"** — attack 4 kills a signal only if it's actually unprofitable after 15 bps of
+> cost, or if costs cut its risk-adjusted return by more than half *and what's left is weak*. A strong
+> signal that simply has real turnover is taxed, not killed.
 
 **Why this exists:** *an idea that has survived a determined attack is far more trustworthy than one
 that merely "passed a test."*
@@ -621,14 +630,16 @@ near-duplicates. Deflated Sharpe on the leftover = **0.97** — still convincing
 clear of our 0.95 bar. t = 3.2, clears 3.0. PBO low. ✓
 **Spend holdout peek #4 of 12 — on the leftover.** Holds up. **Pass.**
 
-**9 · Gate C · Red-Team** — the agent picks 6 of the 11 attacks:
-*"Is this just small caps?"* → large-cap only: holds.
-*"One lucky year?"* → positive in 7 of 9 years.
-*"Survives costs?"* → yes at 15 bps, marginal at 30.
-*"Hidden look-ahead?"* → +1-day lag: RankIC 0.029, degraded but alive. ✓
-*"Depends on `delivery %` timing?"* → shift it: barely moves. ✓
-*"One sector?"* → sector-neutral: holds.
-**Survives.**
+**9 · Gate C · Red-Team** — the five decisive falsifiers always run; the agent adds 3 diagnostics:
+*"One lucky year?"* → drop the best year: RankIC 0.021, still significant. ✓ (decisive)
+*"Only in a bull market?"* → positive in bull **and** bear. ✓ (decisive)
+*"Survives costs?"* → net Sharpe 1.4 at 15 bps — well clear of zero. ✓ (decisive)
+*"Hidden look-ahead?"* → +1-day lag: RankIC 0.029, degraded but > half of baseline. ✓ (decisive)
+*"Sign stable?"* → same direction in 8 of 9 folds. ✓ (decisive)
+*"Is this just small caps?"* → large-cap only: holds. (diagnostic)
+*"Depends on `delivery %` timing?"* → shift only that field: barely moves. (diagnostic)
+*"Only the illiquid fringe?"* → drop the names ranked 150–200 that month: holds. (diagnostic)
+**Survives** (no decisive test flagged).
 
 **10 · Alpha Card issued.** Thesis, locked sign, formula, all reports, full family tree, and the list of
 data fields used.

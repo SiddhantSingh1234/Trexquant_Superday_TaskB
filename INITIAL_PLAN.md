@@ -158,7 +158,7 @@ paper lineage. Depth is one click away, not hidden.
 | S5 Implementation | Coder 🤖 · AST/operator ⚙ · Pre-filter ⚙ · Tier-1 ⚙ · Judge 🤖 | operator library · AST · complexity control · compile check · **structural AST novelty** · fast validation RankIC · refinement critique · within-thesis search · **+ variant cap + fresh-fold confirm + full ledger logging (new)** |
 | S6 Backtester | Tier-1 · Tier-2 · holdout · stress runs · portfolio · ablation | walk-forward · CSCV → PBO · decay · turnover/MDD/Sharpe · cost sweep · purge + embargo · **+ published interface and trial-counting rule (new)** |
 | S7 Gate B | Novelty ⚙ · Stats Auditor ⚙ · holdout ration ⚙ | marginal IC vs book · Deflated Sharpe · t>3 · PBO · trial ledger · holdout budget · **+ reordered: novelty first, DSR on the residual (new)** · **+ the peek scores the residual too, and deflation uses the run-wide *effective* trial count (P6)** |
-| S8 Gate C | Red-Team 🤖 · test menu ⚙ | all stress tests · agent-selects / tool-computes · **+ 2 new tests, labelled rejection-only** |
+| S8 Gate C | Red-Team 🤖 · test menu ⚙ | all stress tests · agent-selects / tool-computes · **+ 2 new tests, labelled rejection-only** · **+ (P9) 5 decisive falsifiers always run — agent only adds diagnostics; test-4 kills on "unprofitable net, or Sharpe halved to <0.5"; regimes are the backtester's expanding-window labels; test 11 reads P1's `liquidity_ranks.parquet`** |
 | S9 Memory | Reflection 🤖 · memory write ⚙ · ledger ⚙ | lessons · prompt updates · bandit priors · lineage graph · trial ledger |
 | *off-loop* | Portfolio ⚙ | low-correlation synergistic set · regime weight-gating |
 

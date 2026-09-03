@@ -252,6 +252,24 @@ computation*. Verdict math stays un-gameable code (our edge vs naive "LLM-as-jud
   > 5 global +1-day lag · **6 `delivery_pct` +1-day shift** · 7 sector-neutralized · 8 liquidity
   > filter · 9 decay curve · 10 sign-stability across folds · **11 known-defect sensitivity**.
   > All **rejection-only** → none of them counts as a trial (C8-UPDATE).
+  >
+  > **D11-UPDATE-2 (Phase 9 build) — four points the slides must read correctly:**
+  > 1. **Decisive vs diagnostic.** Only tests **1, 2, 4, 5, 10** flip the verdict. Tests 3/6/7/8/9/11
+  >    run and report a flag but never kill on their own. **The five decisive tests always run**,
+  >    unioned with whatever the agent picked — the agent chooses which *diagnostics* to add, not
+  >    whether to face the falsifiers. (`forced_decisive_tests` in the result names any it had skipped.)
+  > 2. **Test 4 kill rule.** "Net book unprofitable at 15 bps, **or** the gross→net Sharpe cut > 50%
+  >    **and** the surviving Sharpe < 0.5." The bare ">50% degradation" reading culls legitimate
+  >    high-turnover alpha (Sharpe 4.0→2.0 is still tradeable). ">50% degradation" *is* applied
+  >    literally to test 5 (look-ahead — any big drop is suspicious).
+  > 3. **Regimes moved to the backtester.** P4's `_regime_mask` had a look-ahead (a *full-sample*
+  >    median vol threshold). Fixed at source: `_regime_labels` is now expanding-window
+  >    (bull/bear = trailing-63d compounded return ±5%, highvol = trailing-21d vol ≥ expanding top
+  >    tercile). The red-team no longer keeps its own regime copy — it calls
+  >    `backtest(subsample={"regime": …})`.
+  > 4. **Test 11 reads a real file.** P1 now emits `data/universe/liquidity_ranks.parquet`
+  >    (`month_end · symbol · liquidity_rank · trailing_turnover`); test 11 reads it to find the
+  >    names ranked 150–200 that month. (`universe_stats.parquet` only has aggregate rows.)
 
 - **D12 · Economics Gate 0 made real (anti-rubber-stamp) → rubric + adversarial scorer + pre-registered
   sign (the teeth).** (1) **Hard rubric** — thesis must fill *all*: named mechanism · who's the

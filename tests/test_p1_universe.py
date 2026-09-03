@@ -157,3 +157,44 @@ def test_universe_stats_has_cutoff(res):
     live = s[s["n_members"] == TARGET_N]
     assert live["turnover_cutoff_200"].notna().all()
     assert (live["median_turnover"] >= live["turnover_cutoff_200"]).all()
+
+
+def test_liquidity_ranks_emitted(res):
+    """Per-symbol monthly trailing-liquidity ranking (read by P9's universe_edge)."""
+    r = res["ranks"]
+    assert list(r.columns) == ["month_end", "symbol", "liquidity_rank", "trailing_turnover"]
+    assert pd.api.types.is_datetime64_ns_dtype(r["month_end"])
+    assert r["liquidity_rank"].dtype == "int64"
+    assert not r.duplicated(["month_end", "symbol"]).any()
+
+    live_months = {s["month_end"] for s in res["selection"]["selections"]
+                   if s["n_members"] > 0}
+    # every ranked month is a live selection; at most the final selection can be
+    # absent (never in force — no trading day follows it, P1 §7.7)
+    assert set(r["month_end"]) <= live_months
+    assert 0 <= len(live_months) - r["month_end"].nunique() <= 1
+
+    sel_by_month = {s["month_end"]: s for s in res["selection"]["selections"]}
+    last_month = max(r["month_end"])
+    for me, g in r.groupby("month_end"):
+        g = g.sort_values("liquidity_rank")
+        # rank orders by DESCENDING trailing turnover; rank 1 = most liquid
+        assert g["trailing_turnover"].is_monotonic_decreasing
+        assert g["liquidity_rank"].is_monotonic_increasing
+        assert g["liquidity_rank"].iloc[0] == 1
+        assert set(g["symbol"]) <= set(sel_by_month[me]["symbols"])
+        # ranks are contiguous 1..n except the final month-end selection, which
+        # is never in force so its fresh-listing names are dropped (leaving gaps)
+        if me != last_month:
+            assert list(g["liquidity_rank"]) == list(range(1, len(g) + 1))
+
+    # every ranked name is a real universe member (post the final-month drop)
+    members = set(res["membership"].loc[res["membership"]["in_universe"], "symbol"])
+    assert set(r["symbol"]) <= members
+
+    # the rank-200 turnover matches universe_stats' turnover_cutoff_200
+    stats = res["stats"].set_index("date")["turnover_cutoff_200"]
+    full = r[r["liquidity_rank"] == TARGET_N]
+    for me, tt in full.set_index("month_end")["trailing_turnover"].items():
+        if me in stats.index and pd.notna(stats[me]):
+            assert abs(tt - stats[me]) < 1e-6

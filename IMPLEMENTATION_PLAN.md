@@ -378,6 +378,10 @@ filters by "still in the index in 2026" — a survival filter, and a silent one,
 - `data/universe/membership.parquet` — Section 0.5 schema (`date · symbol · in_universe`), daily,
   forward-filled from each monthly selection to the next
 - `data/universe/universe_stats.parquet` — `date · n_members · median_turnover · turnover_cutoff_200`
+- `data/universe/liquidity_ranks.parquet` — `month_end · symbol · liquidity_rank · trailing_turnover`
+  (one row per selected name per month; `liquidity_rank` 1 = most liquid). This is the per-symbol form
+  of the ranking that fixes `turnover_cutoff_200`; **Phase 9's red-team `universe_edge` test reads it**
+  to identify the names ranked 150–200 that month.
 - `data/universe/symbols.json` — union of every symbol ever selected, plus the ISIN map
 - `reports/p1_universe_report.md`
 
@@ -809,8 +813,13 @@ def backtest(
     cost_bps: float = 0.0,
     neutralize: str | None = None, # None | "sector"
     subsample: dict | None = None, # {"years":[2018,2019]} | {"size_tercile":"large"} |
-                                   # {"regime":"bear"} | {"min_turnover": 1e7} |
-                                   # {"exclude_symbols":[...]}
+                                   # {"regime":"bull"|"bear"|"calm"|"volatile"|"highvol"} |
+                                   # {"min_turnover": 1e7} | {"exclude_symbols":[...]}
+                                   # regimes: EXPANDING-window labels from the EW fwd_ret_1
+                                   # proxy — bull/bear = trailing-63d compounded return >+5%/<-5%,
+                                   # highvol = trailing-21d vol >= expanding top tercile,
+                                   # calm/volatile = vs the expanding median. NEVER full-sample
+                                   # (a full-sample threshold is look-ahead; Phase 9 consumes this).
     purge_days: int = None,        # defaults to horizon
     embargo_days: int = 5,
 ) -> Metrics                       # the dict shape in Section 0.5
@@ -1436,37 +1445,66 @@ computes *how much*. It never writes free-form code — that keeps every attack 
 
 ## Outputs
 - `src/redteam.py`, `tests/test_p9_redteam.py`
+- `run_redteam(signal, tests=None, *, split, horizon, sign, thesis, formula, panel,
+  liquidity_ranks, prices, ledger, ...)` → `{"verdict","failed_tests",
+  "flagged_diagnostics","tests_run","forced_decisive_tests","results","baseline",
+  "n_backtests","counts_as_trial":0}`
 
 ## The eleven tests
 
-| # | Name | Call | Hunts |
-|---:|---|---|---|
-| 1 | `subsample_year` | one backtest per year | "it was one lucky year" |
-| 2 | `regime_split` | bull / bear / high-vol subsamples | "only works in a bull market" |
-| 3 | `size_tercile` | by `size_proxy` tercile (**trailing turnover, not market cap** — see P2 step 4c) | "it's a small-cap artefact" |
-| 4 | `cost_sweep` | `cost_bps ∈ {5,15,30}` | "great gross, loses money net" |
-| 5 | `extra_lag` | `extra_lag=1` | **hidden look-ahead** |
-| 6 | `delivery_lag` | shift **only** `delivery_pct` by 1 day | **which field is the edge leaning on?** |
-| 7 | `sector_neutral` | `neutralize="sector"` | "it's one industry bet" |
-| 8 | `liquidity_filter` | `min_turnover` filter | "untradeable names" |
-| 9 | `decay_curve` | `h ∈ {1,2,3,5,10,21}` | "the claimed horizon is fiction" |
-| 10 | `sign_stability` | sign of RankIC per fold | "the direction flips around" |
-| 11 | `universe_edge` | drop names ranked 150-200 by liquidity that month | "it only works on the illiquid fringe of the universe" |
+| # | Name | Call | Hunts | Kind |
+|---:|---|---|---|---|
+| 1 | `subsample_year` | drop the single best year, re-score | "it was one lucky year" | **decisive** |
+| 2 | `regime_split` | `backtest(subsample={"regime": "bull"/"bear"/"highvol"})` | "only works in a bull market" | **decisive** |
+| 3 | `size_tercile` | by `size_proxy` tercile (**trailing turnover, not market cap** — see P2 step 4c) | "it's a small-cap artefact" | diagnostic |
+| 4 | `cost_sweep` | `cost_bps ∈ {5,15,30}` | "great gross, loses money net" | **decisive** |
+| 5 | `extra_lag` | `extra_lag=1` | **hidden look-ahead** | **decisive** |
+| 6 | `delivery_lag` | shift **only** `delivery_pct` by 1 day, re-evaluate the formula | **which field is the edge leaning on?** | diagnostic |
+| 7 | `sector_neutral` | `neutralize="sector"` | "it's one industry bet" | diagnostic |
+| 8 | `liquidity_filter` | `min_turnover` filter | "untradeable names" | diagnostic |
+| 9 | `decay_curve` | RankIC at `h ∈ {1,2,3,5,10,21}` (from the baseline backtest) | "the claimed horizon is fiction" | diagnostic |
+| 10 | `sign_stability` | sign of RankIC per fold | "the direction flips around" | **decisive** |
+| 11 | `universe_edge` | drop names ranked 150-200 by liquidity that month | "it only works on the illiquid fringe" | diagnostic |
 
 **Test 6 is more diagnostic than test 5** and worth understanding: if RankIC survives a *global* one-day
 lag but collapses when only `delivery_pct` shifts, you have **localized** the dependency to the one
 field whose availability timing is genuinely ambiguous. It names the culprit instead of just flagging
-that one exists.
+that one exists. (The result's `delivery_lag.localized` is `True` exactly when it collapsed here but
+**not** under test 5.)
 
 ## Survive rule
-Survives **iff**: RankIC stays positive and significant across tests 1, 2, 5; does not collapse
-(> 50% degradation) under test 4 at 15 bps or under test 5; and test 10 shows a consistent sign in
-≥ 70% of folds. Return `{"verdict": "survives"|"killed", "failed_tests": [...], "results": {...}}`.
+Survives **iff**: RankIC stays positive and significant across tests 1, 2, 5; does not collapse under
+test 4 at 15 bps or under test 5; and test 10 shows a consistent sign in ≥ 70% of folds.
 
-## Regime definition
-Define regimes from the equal-weight universe index: **bull** = 63-day return > +5%; **bear** = < −5%;
-**high-vol** = 21-day realized volatility in the top tercile of its own history *up to that date*
-(expanding, never full-sample — a full-sample threshold is look-ahead).
+- **Decisive vs diagnostic.** Only tests **1, 2, 4, 5, 10** flip the verdict — those are `failed_tests`.
+  Tests 3, 6, 7, 8, 9, 11 run and report a `flag` in `flagged_diagnostics` but never kill on their own.
+- **The five decisive tests always run**, unioned with whatever the agent selected — a falsification
+  gate a candidate can opt out of is not a gate. `forced_decisive_tests` in the result names any the
+  agent's selection had omitted. (The agent still *chooses* which diagnostics to add.)
+- **Test 4's kill rule** is *"net book unprofitable at 15 bps (`sharpe ≤ 0` or `ann_return ≤ 0`), **or**
+  the gross→net Sharpe cut exceeds 50% **and** the surviving Sharpe is itself < 0.5."* The bare
+  ">50% degradation" reading kills legitimate high-turnover alpha (a signal whose Sharpe halves from
+  4.0 to 2.0 is still tradeable); the red-team culls false discoveries, not turnover. The ">50%
+  degradation" clause **is** applied literally to test 5 (look-ahead — any large drop is suspicious).
+- **Test 2's significance floor** for a regime sub-sample is `|t| ≥ 1.5` (`RT_SIG_T`), softer than the
+  project-wide `T_STAT_BAR = 3.0`: a 60–500-day regime fold cannot clear 3.0. Same for the per-year
+  folds in tests 1 and 10.
+
+## Regime definition — computed by the backtester, consumed here
+Regimes are the backtester's `subsample={"regime": ...}` (`src/backtester.py::_regime_labels`), from
+the equal-weight `fwd_ret_1` market proxy, **expanding-window only**:
+**bull** = trailing-63-day *compounded* market return > +5%; **bear** = < −5%;
+**highvol** = trailing-21-day realized vol ≥ its own **expanding** top tercile (`calm`/`volatile` split
+on the expanding median). A full-sample threshold is look-ahead — P4's original `_regime_mask` used a
+full-sample median and was fixed at source as part of this phase (the red-team no longer keeps its own
+copy). Truncation-invariance is asserted in `tests/test_p4_backtester.py`.
+
+## Test 11 — the fringe comes from P1's per-symbol ranking
+`universe_edge` reads **`data/universe/liquidity_ranks.parquet`** (P1 output:
+`month_end · symbol · liquidity_rank · trailing_turnover`) to find the names ranked 150–200 by trailing
+liquidity that month. It recomputes the ranking from the price panel (`universe.compute_selection`) only
+when that file is absent or its symbols don't match the signal. (`universe_stats.parquet` carries only
+aggregate monthly rows — it cannot answer "which names are ranked 150–200".)
 
 ## Acceptance
 - [ ] All 11 run against a fixture signal and return the documented shape.
@@ -1474,8 +1512,17 @@ Define regimes from the equal-weight universe index: **bull** = 63-day return > 
 - [ ] A signal that works in only one year is killed by test 1.
 - [ ] A signal with high turnover and thin gross edge is killed by test 4.
 - [ ] Every red-team backtest is recorded with `counts_as_trial=0`.
-- [ ] Test 11 uses the liquidity ranking from `universe_stats.parquet`, not a hard-coded symbol list.
-- [ ] Regime labels use expanding-window thresholds only (assert no full-sample statistic).
+- [ ] Test 11 reads `data/universe/liquidity_ranks.parquet` (P1), not a hard-coded symbol list.
+- [ ] Regime labels use expanding-window thresholds only (truncation-invariance asserted).
+
+## Known limitations (verify on real data in P10)
+- Everything is verified on synthetic fixtures. The fixture panel plants an **AR(1)** latent (φ = 0.9)
+  in `tests/`, not the IID `contracts.make_fake_*` latent, because an IID signal's entire edge is on
+  day *t* — it dies under `extra_lag=1`, so the "survives" branch would be untestable. This is a
+  test-input choice only; `src/redteam.py` generates no data and behaves identically on the real panel.
+- `regime_split` has been shown to *populate* and *not kill a good signal*; it has not been shown to
+  *kill* a real bull-only signal (the synthetic market's regimes are engineered, not real).
+- The LLM agent → menu hand-off is contract-checked on both sides but not run end-to-end (that is P10).
 
 ## Do NOT
 Do not let the LLM generate test code. Do not count these as trials. Do not touch HOLDOUT.

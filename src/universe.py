@@ -21,6 +21,8 @@ Outputs
 -------
 * `data/universe/membership.parquet`   — daily long boolean panel (Section 0.5)
 * `data/universe/universe_stats.parquet`— `date · n_members · median_turnover · turnover_cutoff_200`
+* `data/universe/liquidity_ranks.parquet` — `month_end · symbol · liquidity_rank · trailing_turnover`
+  (per-symbol monthly ranking; Phase 9's red-team `universe_edge` test reads it)
 * `data/universe/symbols.json`          — union of every symbol ever selected + ISIN map
 * `reports/p1_universe_report.md`
 """
@@ -33,18 +35,19 @@ import numpy as np
 import pandas as pd
 
 from .config import (
+    LIQUIDITY_RANKS_PARQUET,
     OHLCV_PARQUET,
     RANDOM_SEED,
     REPORTS_DIR,
     SYMBOLS_JSON,
     UNIVERSE_DIR,
+    UNIVERSE_STATS_PARQUET,
 )
 from .contracts import make_fake_ohlcv, validate_membership, validate_ohlcv, validate_symbols_json
 
 REPO_ROOT: Path = Path(__file__).resolve().parent.parent
 SUPPLIED_CSV: Path = REPO_ROOT / "nifty200_2015-01-01_to_2026-09-01.csv"
 NSE_CURRENT_LIST: Path = REPO_ROOT / "data" / "raw" / "ind_nifty200list.csv"
-UNIVERSE_STATS_PARQUET: Path = UNIVERSE_DIR / "universe_stats.parquet"
 P1_REPORT: Path = REPORTS_DIR / "p1_universe_report.md"
 
 # THE RULE parameters.
@@ -158,10 +161,12 @@ def compute_selection(prices: pd.DataFrame, as_of: pd.Timestamp | None = None) -
         cand = cand.sort_values(["tt63", "symbol"], ascending=[False, True])
         top = cand.head(TARGET_N)
         picks = top["symbol"].tolist()
+        picks_tt = [float(x) for x in top["tt63"].tolist()]   # parallel to picks, turnover-desc
         cutoff = float(top["tt63"].iloc[-1]) if len(top) >= TARGET_N else float("nan")
         selections.append({
             "month_end": pd.Timestamp(d),
             "symbols": picks,
+            "turnover": picks_tt,
             "n_members": len(picks),
             "median_turnover": float(top["tt63"].median()) if picks else float("nan"),
             "turnover_cutoff_200": cutoff,
@@ -215,6 +220,42 @@ def build_membership(prices: pd.DataFrame, sel: dict) -> pd.DataFrame:
     _log("a stock that stops trading mid-month keeps in_universe==True until the "
          "next selection; it has no price rows so P3's join drops it")
     return out.sort_values(["date", "symbol"]).reset_index(drop=True)
+
+
+def build_liquidity_ranks(sel: dict) -> pd.DataFrame:
+    """Per-symbol trailing-liquidity ranking for every non-empty monthly selection.
+
+    One row per (month_end, symbol) among that month's top-``TARGET_N`` picks.
+    ``liquidity_rank`` is 1 for the most liquid name that month; the symbols are
+    already sorted turnover-descending inside ``compute_selection``.  This is the
+    exact ranking that produced ``universe_stats.parquet``'s
+    ``turnover_cutoff_200`` — Phase 9's red-team reads it to identify the names
+    ranked 150-200 that month (``universe_edge`` test) rather than recomputing.
+
+    | column | type | notes |
+    |---|---|---|
+    | ``month_end`` | datetime64[ns] | the selection date the rank was fixed on |
+    | ``symbol`` | string | uppercase, no ``.NS`` |
+    | ``liquidity_rank`` | int64 | 1 = most liquid; max == that month's ``n_members`` |
+    | ``trailing_turnover`` | float64 | trailing-63d median ``close_raw x volume_raw`` |
+    """
+    rows: list[dict] = []
+    for s in sel["selections"]:
+        if s["n_members"] == 0:
+            continue
+        for rank, (sym, tt) in enumerate(zip(s["symbols"], s["turnover"]), start=1):
+            rows.append({
+                "month_end": s["month_end"],
+                "symbol": str(sym),
+                "liquidity_rank": rank,
+                "trailing_turnover": float(tt),
+            })
+    df = pd.DataFrame(rows, columns=["month_end", "symbol", "liquidity_rank",
+                                     "trailing_turnover"])
+    df["month_end"] = pd.to_datetime(df["month_end"]).dt.normalize().astype("datetime64[ns]")
+    df["liquidity_rank"] = df["liquidity_rank"].astype("int64")
+    df["trailing_turnover"] = df["trailing_turnover"].astype("float64")
+    return df.sort_values(["month_end", "liquidity_rank"]).reset_index(drop=True)
 
 
 def build_universe_stats(sel: dict) -> pd.DataFrame:
@@ -438,6 +479,13 @@ def write_report(*, price_src, sel, membership, stats, overlap, churn, la, sym_j
           f"{'nan' if pd.isna(r['turnover_cutoff_200']) else format(r['turnover_cutoff_200'], '.3e')} |")
     A("\nThe rank-200 turnover cutoff is the liquidity floor; it should drift "
       "upward over the sample.\n")
+    A("### liquidity_ranks.parquet\n")
+    A(f"Per-symbol trailing-turnover ranking, one row per (month_end, symbol) "
+      f"among each month's top-{TARGET_N} picks (`month_end · symbol · "
+      f"liquidity_rank · trailing_turnover`; rank 1 = most liquid). This is the "
+      f"same ranking that fixes `turnover_cutoff_200` above; **Phase 9's "
+      f"red-team reads it** to identify the names ranked 150–200 that month "
+      f"(`universe_edge` test) instead of recomputing.\n")
     A("## 5. Index-overlap diagnostic (context only — never a selection input)\n")
     o = overlap
     A(f"- Our union: {o['our_union_n']} symbols; our current-day universe: {o['our_current_n']}.")
@@ -503,6 +551,18 @@ def run(write: bool = True) -> dict:
     membership = build_membership(prices, sel)
     validate_membership(membership)
     stats = build_universe_stats(sel)
+    ranks = build_liquidity_ranks(sel)
+    # keep the ranking consistent with the daily panel: the final month-end
+    # selection is never "in force" if no trading day follows it (P1 §7.7), so
+    # its brand-new picks never enter membership — drop them here too.
+    member_syms = set(membership.loc[membership["in_universe"], "symbol"])
+    dropped = sorted(set(ranks["symbol"]) - member_syms)
+    ranks = ranks[ranks["symbol"].isin(member_syms)].reset_index(drop=True)
+    _log(f"liquidity_ranks.parquet: {len(ranks):,} rows "
+         f"({ranks['month_end'].nunique()} months x up to {TARGET_N} names), "
+         f"per-symbol trailing-turnover rank read by P9 universe_edge"
+         + (f"; dropped {len(dropped)} name(s) only in the unapplied final "
+            f"selection: {dropped[:8]}" if dropped else ""))
     sym_json = build_symbols_json(prices, membership)
     validate_symbols_json(sym_json)
 
@@ -518,11 +578,12 @@ def run(write: bool = True) -> dict:
         REPORTS_DIR.mkdir(parents=True, exist_ok=True)
         membership.to_parquet(UNIVERSE_DIR / "membership.parquet", index=False)
         stats.to_parquet(UNIVERSE_STATS_PARQUET, index=False)
+        ranks.to_parquet(LIQUIDITY_RANKS_PARQUET, index=False)
         SYMBOLS_JSON.write_text(json.dumps(sym_json, indent=2), encoding="utf-8")
         P1_REPORT.write_text(report, encoding="utf-8")
 
     return {"prices": prices, "selection": sel, "membership": membership,
-            "stats": stats, "symbols": sym_json, "overlap": overlap,
+            "stats": stats, "ranks": ranks, "symbols": sym_json, "overlap": overlap,
             "churn": churn, "lookahead": la, "report": report,
             "price_src": price_src}
 
@@ -533,6 +594,8 @@ if __name__ == "__main__":
     print(f"membership.parquet : {len(m):,} rows, {m['symbol'].nunique()} symbols, "
           f"{m['date'].nunique()} trading days")
     print(f"universe_stats     : {len(r['stats'])} monthly rows")
+    print(f"liquidity_ranks    : {len(r['ranks']):,} rows "
+          f"({r['ranks']['month_end'].nunique()} months)")
     print(f"symbols.json       : n={r['symbols']['n']}")
     print(f"monthly turnover   : mean {r['churn']['mean_pct']}%")
     print(f"look-ahead check   : bit_identical={r['lookahead']['bit_identical']} "

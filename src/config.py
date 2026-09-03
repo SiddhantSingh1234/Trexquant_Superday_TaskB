@@ -43,6 +43,10 @@ BOOK_PARQUET: Path = DATA_DIR / "book.parquet"
 # Named artifact files (contract paths — downstream phases import these)
 MEMBERSHIP_PARQUET: Path = UNIVERSE_DIR / "membership.parquet"
 SYMBOLS_JSON: Path = UNIVERSE_DIR / "symbols.json"
+UNIVERSE_STATS_PARQUET: Path = UNIVERSE_DIR / "universe_stats.parquet"
+# Per-symbol monthly trailing-liquidity ranking (P1) — read by the Phase-9
+# red-team's universe-edge test to identify the names ranked 150-200 that month.
+LIQUIDITY_RANKS_PARQUET: Path = UNIVERSE_DIR / "liquidity_ranks.parquet"
 OHLCV_PARQUET: Path = PRICES_DIR / "ohlcv.parquet"
 FEATURES_PARQUET: Path = PANEL_DIR / "features.parquet"
 LABELS_PARQUET: Path = PANEL_DIR / "labels.parquet"
