@@ -468,6 +468,21 @@ class LLMClient:
         else:
             self._probe_tried = [self.model] if self.model else []
 
+        # Rate limits are a property of the MODEL, not the tier, and the probe may
+        # have walked past the tier's head to a fallback.  Now that the model is
+        # known, re-derive from its measured limits.  An explicitly-passed value
+        # always wins — callers (and tests) that pin tpm/rpm/tpd_cap keep theirs.
+        lim = config.LLM_MODEL_LIMITS.get(self.model or "")
+        if lim:
+            if tpm is None and "tpm" in lim and int(lim["tpm"]) != self.tpm:
+                self.tpm = int(lim["tpm"])
+                self._bucket = _TokenBucket(self.tpm, self._clock, self._sleep)
+            if tpd_cap is None and budget is None and "tpd_cap" in lim:
+                self.budget = TokenBudget(self.tier, cap=int(lim["tpd_cap"]))
+        # measured requests-per-day ceiling for this model (see config); recorded
+        # so a caller can check it — `TokenBudget` covers tokens/day, not requests.
+        self.rpd = int((lim or {}).get("rpd", config.LLM_RPD.get(self.tier, 0)))
+
     # -- accounting snapshot --------------------------------------
     @property
     def stats(self) -> dict:

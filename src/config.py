@@ -103,9 +103,24 @@ OLLAMA_HOST: str = _os.environ.get("OLLAMA_HOST", "http://localhost:11434").stri
 # and `llama-3.1-8b-instant` were reportedly deprecated 2026-06-17 (sources
 # conflict with Groq's own models page).  Read the tier's ordered fallback chain
 # from here and probe availability at startup, walking down the list.
+# ⚠️ These IDs are VERIFIED LIVE against the Groq API (2026-09-04), which
+# supersedes PRE_BUILD_TASKS.md T3 — T3 itself said its sources conflicted and it
+# "could not resolve it without an API key".  We now have one, and `models.list()`
+# is authoritative.  Measured with the project key:
+#
+#   AVAILABLE : openai/gpt-oss-120b · openai/gpt-oss-20b
+#               qwen/qwen3.8-27b    · qwen/qwen3.6-27b
+#   GONE (404 model_not_found, "does not exist or you do not have access"):
+#               qwen/qwen3-32b · llama-3.3-70b-versatile · llama-3.1-8b-instant
+#
+# So T3's deprecation report was right about the llama models, and its suggested
+# replacement `qwen/qwen3-32b` is ALSO gone.  Every ID below currently resolves,
+# giving each tier three real fallbacks instead of one working head.
+# Re-verify with:  python -c "from groq import Groq; print([m.id for m in
+#                  Groq(api_key=...).models.list().data])"
 LLM_MODEL_CHAINS: dict[str, tuple[str, ...]] = {
-    "large": ("openai/gpt-oss-120b", "qwen/qwen3-32b", "llama-3.3-70b-versatile"),
-    "small": ("openai/gpt-oss-20b", "llama-3.1-8b-instant", "llama-3.3-70b-versatile"),
+    "large": ("openai/gpt-oss-120b", "qwen/qwen3.8-27b", "qwen/qwen3.6-27b"),
+    "small": ("openai/gpt-oss-20b", "qwen/qwen3.6-27b", "openai/gpt-oss-120b"),
     "offline": ("qwen2.5-7b", "llama3.1", "phi3"),
 }
 
@@ -117,12 +132,42 @@ LLM_ROLE_TIER: dict[str, str] = {
     "planner": "small", "librarian": "small", "economics": "small",
 }
 
-# Free-tier limits per ORGANISATION (extra keys do not multiply capacity),
-# PRE_BUILD_TASKS.md T3.  Conservative: the gpt-oss row (TPM 8k, TPD 200k).
-# Tokens-per-day is the binding constraint, not requests.
+# ── Free-tier limits per ORGANISATION (extra keys do not multiply capacity) ──
+#
+# MEASURED LIVE 2026-09-04 from Groq's response headers, not assumed.  Method: a
+# 1-token chat completion per model, reading `x-ratelimit-*` off the raw response.
+# Groq exposes exactly two limit headers, and the RESET fields pin their windows:
+#
+#   x-ratelimit-limit-tokens:   8000   reset-tokens   547ms for 73 tokens spent
+#       -> 7.5 ms/token x 8000 = 60 s  ==> the token window is per MINUTE (TPM)
+#   x-ratelimit-limit-requests: 1000   reset-requests +86.4 s per request spent
+#       -> 86.4 s x 1000 = 86,400 s    ==> the request window is per DAY (RPD)
+#
+# Every model this project actually uses measured IDENTICALLY — gpt-oss-120b,
+# gpt-oss-20b, qwen3.8-27b, qwen3.6-27b: all TPM 8,000 / RPD 1,000.  So the old
+# per-tier split is correct as a number; it is now verified rather than assumed.
+# (For contrast, groq/compound-mini measured TPM 70,000 / RPD 250 — limits really
+# do vary by model, which is why LLM_MODEL_LIMITS below is keyed by model.)
 LLM_TPM: dict[str, int] = {"large": 8_000, "small": 8_000, "offline": 1_000_000}
+LLM_RPD: dict[str, int] = {"large": 1_000, "small": 1_000, "offline": 10_000_000}
+
+# ⚠️ NOT measurable from headers — Groq publishes no TPD or RPM header.  These
+# stay at PRE_BUILD_TASKS.md T3's tabulated gpt-oss values and remain ASSUMED.
+# TPD is only observable by exhausting it, which a probe must not do.
 LLM_TPD_CAP: dict[str, int] = {"large": 200_000, "small": 200_000, "offline": 10_000_000}
 LLM_RPM: dict[str, int] = {"large": 30, "small": 30, "offline": 600}
+
+# Per-MODEL measured limits.  `LLMClient` prefers these once the startup probe has
+# resolved which model it actually got, so a fallback down the chain cannot end up
+# throttled at another model's numbers.  Keys are model IDs; values override the
+# per-tier defaults above.  Absent model -> tier default.
+LLM_MODEL_LIMITS: dict[str, dict[str, int]] = {
+    # measured 2026-09-04 (tpm/rpd from headers; tpd_cap from T3, unmeasurable)
+    "openai/gpt-oss-120b": {"tpm": 8_000, "rpd": 1_000, "tpd_cap": 200_000},
+    "openai/gpt-oss-20b": {"tpm": 8_000, "rpd": 1_000, "tpd_cap": 200_000},
+    "qwen/qwen3.8-27b": {"tpm": 8_000, "rpd": 1_000, "tpd_cap": 200_000},
+    "qwen/qwen3.6-27b": {"tpm": 8_000, "rpd": 1_000, "tpd_cap": 200_000},
+}
 
 # The eight agent roles (deterministic code — backtester, stats, novelty — is NOT
 # an agent and does not appear here).

@@ -75,6 +75,11 @@ neutralization and red-team test 7 — but it must be stated, not hidden. (Consi
 
 ## T3 ✅ — Will the Groq free tier survive a full run? → **Not a 50-thesis one. ~20 theses/day is the ceiling. And our two named models are deprecated.**
 
+> **⚠️ PARTIALLY SUPERSEDED 2026-09-04** — see the two **T3-UPDATE** callouts below. The
+> ~20-theses/day conclusion **stands**. The *model IDs* are stale (its recommended
+> replacement `qwen/qwen3-32b` is now 404 too), and TPM/RPD are now measured rather than
+> tabulated from published docs. Source of truth for IDs and limits: `src/config.py`.
+
 **Why it matters.** ~14,400 req/day sounds ample, but a 20-variant inner loop across many generations
 multiplies fast, and **per-minute rate limits bite long before daily caps**. Finding this out during a
 demo is the bad outcome.
@@ -93,6 +98,30 @@ recommending `openai/gpt-oss-120b` / `qwen/qwen3-32b` and `openai/gpt-oss-20b` a
 sources conflict and I could not resolve it without an API key. **Do not hard-code a model.** P8 must
 read the model ID from config and **probe availability at startup**, falling back down a list.
 
+> ### 🔴 T3-UPDATE (2026-09-04) — SUPERSEDED on model IDs. The caveat above is now resolved.
+>
+> We now have an API key. Probed live against `models.list()` and a 1-token completion per model:
+>
+> | Model | Live status |
+> |---|---|
+> | `openai/gpt-oss-120b` | ✅ available |
+> | `openai/gpt-oss-20b` | ✅ available |
+> | `qwen/qwen3.8-27b` | ✅ available *(not known when T3 was written)* |
+> | `qwen/qwen3.6-27b` | ✅ available *(not known when T3 was written)* |
+> | `llama-3.3-70b-versatile` | ❌ 404 `model_not_found` |
+> | `llama-3.1-8b-instant` | ❌ 404 `model_not_found` |
+> | `qwen/qwen3-32b` | ❌ 404 `model_not_found` |
+>
+> **T3 was right that the two llama models are gone — but the replacement it recommends,
+> `qwen/qwen3-32b`, is ALSO gone.** Do not restore chains from the table above; it now
+> yields 1 working head and 2 dead fallbacks per tier. The live chains in
+> `src/config.py` (`LLM_MODEL_CHAINS`) probe **3/3** per tier and are the source of truth.
+>
+> ⚠️ This is the one place the standing precedence rule inverts: *PRE_BUILD_TASKS wins on
+> empirical facts* — **except here**, where T3 itself says it could not verify. A live probe
+> outranks it. See `reports/p10_handoff.md` §8 (a config "fix" was made and then reverted on
+> exactly this mistake).
+
 ### Free-tier limits (per organisation, not per key — extra keys do not multiply capacity)
 
 | Model | RPM | RPD | TPM | **TPD** |
@@ -104,6 +133,30 @@ read the model ID from config and **probe availability at startup**, falling bac
 | `llama-3.1-8b-instant` | 30 | 14,400 | 6,000 | **500,000** |
 
 **Tokens-per-day is the binding constraint, not requests.** You hit whichever limit comes first.
+
+> ### 🟡 T3-UPDATE (2026-09-04) — limits MEASURED for the models that still exist
+>
+> Method: one 1-token completion per model, reading `x-ratelimit-*` off the raw response.
+> Groq publishes only two limit headers; their RESET fields pin the windows:
+>
+> | Header | Value | Reset | Window implied |
+> |---|---|---|---|
+> | `x-ratelimit-limit-tokens` | 8000 | 547 ms per 73 tokens → 7.5 ms/token | ×8000 = 60 s ⇒ **TPM** |
+> | `x-ratelimit-limit-requests` | 1000 | +86.4 s per request | ×1000 = 86,400 s ⇒ **RPD** |
+>
+> **All four surviving models measured identically: TPM 8,000 / RPD 1,000** —
+> `openai/gpt-oss-120b`, `openai/gpt-oss-20b`, `qwen/qwen3.8-27b`, `qwen/qwen3.6-27b`.
+> So the TPM column above is confirmed for the gpt-oss rows; the rows for the three dead
+> models are moot. (`groq/compound-mini` measured TPM 70,000 / RPD 250 — limits do vary by
+> model, so they are now stored per-model in `config.LLM_MODEL_LIMITS`.)
+>
+> **RPD was previously untracked in code** — `TokenBudget` covers tokens/day and
+> `_min_interval` covers RPM, but nothing counted requests/day. Now in `config.LLM_RPD`.
+> Not binding at ~16.6 calls/thesis × 20 theses ≈ 332 req/day.
+>
+> ⚠️ **TPD and RPM remain ASSUMED, not measured** — Groq exposes no header for either, and
+> TPD is only observable by exhausting it, which a probe must not do. The **TPD** column
+> above is still the basis for `LLM_TPD_CAP`, and the projection below still rests on it.
 
 ### FINDING 2 — the projection
 
