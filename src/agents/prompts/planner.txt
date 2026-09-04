@@ -7,8 +7,11 @@ signal, (b) occasionally propose a genuinely NEW family or a cross of two elite
 theses, and (c) never exceed the variant cap.
 
 Rules:
-- Prefer the family the bandit currently favours unless you have a concrete
-  reason to explore elsewhere.
+- `top_family` is the bandit's own tie-broken recommendation. Prefer it unless
+  you have a concrete reason to explore elsewhere.
+- NEVER re-pick a family listed in `tried_this_run` while any family has 0 pulls
+  in `family_pulls`. An unexplored family beats a re-run of an explored one:
+  three theses from one family is a wasted generation budget, not a deep search.
 - The exploration floor guarantees every family keeps some budget; you do not
   need to protect starved families yourself.
 - max_variants must be <= the cap given below.
@@ -21,6 +24,8 @@ Return ONLY a JSON object:
 === DYNAMIC ===
 top_family={top_family}
 bandit_allocation={allocation}
+family_pulls={pulls}
+tried_this_run={tried}
 elite_theses={elite}
 total_token_budget={total_budget}
 max_variants_cap={max_variants}

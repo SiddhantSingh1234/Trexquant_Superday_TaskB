@@ -1,16 +1,49 @@
 You are the CODER. Write ONE formula for the thesis, as a string.
 
-Operators only: rank scale zscore_cs demean_cs sector_neutral delay delta
-ts_mean ts_std ts_min ts_max ts_rank ts_sum ts_argmax ts_product decay_linear
-correlation covariance add sub mul div pow log abs sign min max signed_power
-if_else lt gt le ge eq. Negate with mul(-1, x).
+Operators only — the arg count shown is EXACT; a wrong count is rejected:
+  1 arg (cross-sectional, NO window): rank(x)  zscore_cs(x)  demean_cs(x)
+                                      log(x)  abs(x)  sign(x)
+  2 args: sector_neutral(x, sector)   scale(x, a)   signed_power(x, a)
+          add(a,b) sub(a,b) mul(a,b) div(a,b) pow(a,b)
+          min(a,b) max(a,b)   <- element-wise pair, NOT a rolling window
+          lt(a,b) gt(a,b) le(a,b) ge(a,b) eq(a,b)
+  2 args, time-series — window d is the LAST arg, an integer >= 1:
+          delay(x,d) delta(x,d) ts_mean(x,d) ts_std(x,d) ts_min(x,d) ts_max(x,d)
+          ts_rank(x,d) ts_sum(x,d) ts_argmax(x,d) ts_product(x,d) decay_linear(x,d)
+  3 args: correlation(x,y,d)  covariance(x,y,d)  if_else(cond,a,b)
+Negate with mul(-1, x).  rank / zscore_cs / demean_cs take ONE arg only — there
+is no rank(x,d) or zscore_cs(x,d).  sector_neutral REQUIRES the 2nd arg `sector`.
+For a rolling min/max use ts_min / ts_max, never min / max.
 
 Fields only: open high low close volume vwap returns n_trades delivery_pct
 size_proxy sector close_raw volume_raw. adv{d} = ts_mean(mul(volume, close), d).
 
+There is NO field for realized vol, beta, or a momentum score — you BUILD them.
+These are the standard constructions; use them instead of inventing raw-field
+arithmetic, and sector_neutral() the result when the effect is cross-industry:
+  realized volatility (d days) ...... ts_std(returns, d)
+  lottery / MAX effect ............... ts_max(returns, d)
+  downside tail ...................... ts_min(returns, d)
+  cumulative / trend return .......... ts_sum(returns, d)
+  short-term reversal ................ mul(-1, ts_sum(returns, d))
+  momentum (skip recent month) ....... sub(ts_sum(returns,250), ts_sum(returns,21))
+  Amihud illiquidity ................. ts_mean(div(abs(returns), mul(volume,close)), d)
+  turnover ........................... div(volume, ts_mean(volume, d))
+  52-week-range position ............. div(sub(close, ts_min(low,250)),
+                                          sub(ts_max(high,250), ts_min(low,250)))
+  vol-of-vol ......................... ts_std(ts_std(returns, 21), d)
+Low-volatility and lottery effects are NEGATIVE-signed: the low-vol / low-MAX
+stocks outperform, so write mul(-1, ...).
+
 All operators are causal — no look-ahead is possible. Match the trailing window
 to the thesis horizon. Keep it small (< 12 nodes). The sign must agree with the
 pre-registered direction.
+
+If `anchor_anomaly` below is not "(none)", your FIRST formula must be a
+faithful, minimal implementation of THAT anomaly — the plainest expression of
+its mechanism, no extra terms, no stacked transforms. It is a documented effect
+with published evidence; implement it before you try to improve on it. Only
+later variants (when prior_formula is set) may elaborate.
 
 Return ONLY: {"formula": "<string>", "rationale": "<one sentence>"}
 
@@ -19,6 +52,7 @@ family={family}
 mechanism={mechanism}
 horizon={horizon}
 pre_registered_sign={sign}
+anchor_anomaly={anchor}
 prior_formula={prior_formula}
 edit_motif={edit_motif}
 

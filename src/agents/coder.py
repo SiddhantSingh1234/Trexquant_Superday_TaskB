@@ -54,7 +54,16 @@ class Coder:
 
     def run(self, *, thesis: dict, family: str,
             prior_formula: str | None = None,
-            edit_motif: str | None = None) -> dict:
+            edit_motif: str | None = None,
+            repair_hint: str | None = None,
+            anchor: dict | None = None) -> dict:
+        if anchor:
+            anchor_txt = json.dumps(
+                {k: anchor.get(k) for k in ("name", "mechanism", "horizon_days")},
+                ensure_ascii=False,
+            )
+        else:
+            anchor_txt = "(none — no anchor; write the thesis directly)"
         prompt = self._static + self._dyn.format(
             family=family,
             mechanism=thesis.get("mechanism", ""),
@@ -62,7 +71,16 @@ class Coder:
             sign=thesis.get("pre_registered_sign", 1),
             prior_formula=prior_formula or "(none — first attempt)",
             edit_motif=edit_motif or "(none)",
+            anchor=anchor_txt,
         )
+        if repair_hint:
+            # the previous formula parsed but would not evaluate (usually a wrong
+            # operator arity or a missing `sector` arg) — feed the exact error back.
+            prompt += (
+                f"\n\nYour previous formula {prior_formula!r} PARSED but FAILED TO "
+                f"EVALUATE: {repair_hint}. Return a corrected formula that respects "
+                f"every operator's exact arg count and uses only the listed fields."
+            )
         obj = self.client.call(prompt, SCHEMA, static_prefix=self._static)
 
         try:

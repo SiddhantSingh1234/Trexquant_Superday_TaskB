@@ -46,11 +46,15 @@ Runs end-to-end with ``LLM_MODE=mock`` and no network.
 """
 from __future__ import annotations
 
+import argparse
+import importlib
 import json
 import operator
+import os
 import pickle
 import random
 import sqlite3
+import tempfile
 import threading
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -266,6 +270,7 @@ class AlphaResearchState(TypedDict, total=False):
     max_variants: int
 
     corpus_angles: list
+    corpus_anchor: dict
     keywords: list
     brief: str
 
@@ -278,6 +283,7 @@ class AlphaResearchState(TypedDict, total=False):
     variant_count: int
     stall_count: int
     edit_motif: str
+    eval_error: str
     population: Annotated[list, operator.add]
     best_variant: dict
     promoted: dict
@@ -316,6 +322,7 @@ class RunContext:
     report_lines: list = field(default_factory=list)
     prereg_log: list = field(default_factory=list)    # (thesis_id, hash, "before_backtest")
     accepted: list = field(default_factory=list)
+    families_tried: list = field(default_factory=list)   # one entry per generation
     _promote_marked: set = field(default_factory=set)
     _clock_base: datetime = field(
         default_factory=lambda: datetime(2026, 1, 1, tzinfo=timezone.utc)
@@ -645,10 +652,34 @@ def _make_nodes(ctx: RunContext) -> dict[str, Callable]:
             for f in FAMILIES:
                 ctx.memory.bandit.register_family(f)
             alloc = ctx.memory.bandit.allocation()
-        plan = A["planner"].run(allocation=alloc)
+        # BanditState.suggest breaks the all-equal-allocation tie (unpulled arms
+        # first, then a deterministic rotation).  ``max(alloc, key=alloc.get)``
+        # returned the first-sorted key forever, which is why every generation of
+        # the live_explore run drew `liquidity`.
+        tried = list(ctx.families_tried)
+        try:
+            suggested = ctx.memory.bandit.suggest(ctx._current_gen, exclude=tuple(tried))
+        except Exception:  # noqa: BLE001
+            suggested = "liquidity"
+        plan = A["planner"].run(
+            allocation=alloc, top_family=suggested,
+            pulls={f: ctx.memory.bandit.row(f).get("n_pulls", 0) for f in alloc},
+            tried_this_run=tried,
+        )
         family = plan.get("family")
         if family not in FAMILIES:
-            family = max(alloc, key=alloc.get) if alloc else "liquidity"
+            family = suggested
+        # Hard no-repeat guard: while any family is still unexplored, a repeat
+        # pick is overridden.  A 3-generation run has no budget to spend two of
+        # them on the same family.
+        untried = [f for f in FAMILIES if f not in tried]
+        if family in tried and untried:
+            ctx.report_lines.append(
+                f"[orchestrate] planner re-picked {family!r} (already tried this "
+                f"run); overriding to {suggested!r} — {len(untried)} families unexplored"
+            )
+            family = suggested if suggested not in tried else untried[0]
+        ctx.families_tried.append(family)
         ctx.memory.bandit.register_family(family)
         return {
             "family": family,
@@ -668,8 +699,18 @@ def _make_nodes(ctx: RunContext) -> dict[str, Callable]:
             hits = _corpus_retrieve(load_corpus(), family=fam, keywords=kws)
         except Exception:  # noqa: BLE001
             hits = []
-        angles = [h["name"] for h in hits if h.get("tradeable_with_our_data")]
-        return {"corpus_angles": angles, "keywords": kws}
+        tradeable = [h for h in hits if h.get("tradeable_with_our_data")]
+        angles = [h["name"] for h in tradeable]
+        # The top tradeable hit becomes the ANCHOR: the Coder's first variant must
+        # implement it faithfully before mutating.  Without this the Coder invents
+        # raw-field arithmetic from scratch and never reaches documented effects
+        # that the grammar can express in six nodes.
+        anchor = {}
+        if tradeable:
+            a = tradeable[0]
+            anchor = {k: a.get(k) for k in
+                      ("name", "mechanism", "horizon_days", "fields_needed")}
+        return {"corpus_angles": angles, "keywords": kws, "corpus_anchor": anchor}
 
     # -- S2: brief (LLM) -------------------------------------------
     def brief(state: AlphaResearchState) -> dict:
@@ -710,6 +751,10 @@ def _make_nodes(ctx: RunContext) -> dict[str, Callable]:
         c = A["coder"].run(
             thesis=state["thesis"], family=state["family"],
             prior_formula=prior, edit_motif=state.get("edit_motif"),
+            repair_hint=state.get("eval_error"),
+            # anchor only on the FIRST variant — after that the Judge's edit
+            # motif drives refinement and a fixed anchor would just freeze it.
+            anchor=state.get("corpus_anchor") if not prior else None,
         )
         f = c["formula"]
         cand = {
@@ -718,7 +763,9 @@ def _make_nodes(ctx: RunContext) -> dict[str, Callable]:
             "complexity": c.get("complexity") or _safe_complexity(f),
             "rationale": c.get("rationale", ""),
         }
-        return {"candidate": cand, "variant_count": vc}
+        # eval_error is consumed here; prefilter re-sets it if this formula also
+        # fails to evaluate.
+        return {"candidate": cand, "variant_count": vc, "eval_error": None}
 
     # -- S5: pre-filter (free, code) ----------------------------
     def prefilter(state: AlphaResearchState) -> dict:
@@ -746,10 +793,28 @@ def _make_nodes(ctx: RunContext) -> dict[str, Callable]:
         repeat = ctx.memory.formulas.seen_exact(f)
         ctx.memory.formulas.record(f, outcome="prefiltered")
 
+        # dry-run evaluation — a formula can parse yet still be un-evaluable
+        # (wrong operator arity, a missing `sector` arg, an undefined field).
+        # Catch it HERE, before a Tier-1 trial is spent, and hand it back to the
+        # Coder with the exact error rather than scoring it NaN.
+        eval_err: str | None = None
+        if parses and not reasons:
+            try:
+                evaluate_signal(f, ctx.price_panel)
+            except SignalEvalError as exc:
+                eval_err = str(exc)
+
         stall = int(state.get("stall_count", 0))
         at_cap = int(state.get("variant_count", 0)) >= MAX_VARIANTS
         if reasons:
             decision = "reject"
+        elif eval_err and not at_cap and stall + 1 < STALL_LIMIT:
+            decision = "repair"
+            stall += 1
+        elif eval_err:
+            # out of stall budget (or at the cap) — this dead formula is a reject
+            decision = "reject"
+            reasons.append(f"does not evaluate: {eval_err}")
         elif repeat and not at_cap and stall + 1 < STALL_LIMIT:
             decision = "repeat"
             stall += 1
@@ -757,14 +822,18 @@ def _make_nodes(ctx: RunContext) -> dict[str, Callable]:
             decision = "ok"
         out: dict = {
             "prefilter": {"decision": decision, "reasons": reasons, "zoo_match": zoo_match,
-                          "repeat": repeat},
+                          "repeat": repeat, "eval_error": eval_err},
             "stall_count": stall,
         }
-        if decision == "repeat":
-            # a verbatim repeat is not a new variant — hand the slot back so the
-            # cap counts genuine attempts only (``stall_count`` still bounds the
-            # loop).  A real LLM never repeats verbatim; this only bites the mock.
+        if decision in ("repeat", "repair"):
+            # not a genuine new variant — hand the slot back so the cap counts
+            # real attempts only (``stall_count`` still bounds the loop).  A
+            # verbatim repeat only bites the mock; ``repair`` bites a real LLM
+            # that mis-called an operator.
             out["variant_count"] = max(0, int(state.get("variant_count", 0)) - 1)
+        if decision == "repair":
+            out["eval_error"] = eval_err
+            ctx.report_lines.append(f"[prefilter] repair: {f!r} -> {eval_err}")
         if decision == "reject":
             out["verdict"] = "reject"
             out["reject_reason"] = "pre-filter: " + "; ".join(reasons)
@@ -993,12 +1062,17 @@ def _make_nodes(ctx: RunContext) -> dict[str, Callable]:
         delta = _best_delta(state.get("population", []))
         motif = state.get("edit_motif") or "promote_as_is"
         # LLM call first: a BudgetExhausted here leaves memory untouched.
-        A["reflection"].run(
+        rf = A["reflection"].run(
             family=state.get("family", "liquidity"),
             edit_motif=motif, helped=delta > 0, rank_ic_delta=delta,
             parent_context=f"{state.get('family', '')} factor",
             outcome=verdict, memory=ctx.memory,
         )
+        # A failed memory write used to be swallowed silently, which is how the
+        # live_explore run finished with n_pulls=0 on every bandit arm and no
+        # lessons — three generations that could not learn from each other.
+        for err in (rf.get("applied", {}) or {}).get("errors", []):
+            ctx.report_lines.append(f"[reflect] MEMORY WRITE FAILED — {err}")
         # a rejected candidate with a formula is still written as a (reject) card
         if verdict != "accept" and state.get("candidate"):
             try:
@@ -1066,7 +1140,7 @@ def _route_prefilter(state: AlphaResearchState) -> str:
     d = state["prefilter"]["decision"]
     if d == "reject":
         return "reflect"
-    if d == "repeat":
+    if d in ("repeat", "repair"):
         return "force_decision" if int(state.get("variant_count", 0)) >= MAX_VARIANTS else "code"
     return "tier1"
 
@@ -1567,19 +1641,131 @@ def _write_report(path: Path, ctx: RunContext, status, reason, generations, acce
 
 
 # --------------------------------------------------------------------------- #
-# Manual smoke check                                                           #
+# CLI                                                                          #
 # --------------------------------------------------------------------------- #
-if __name__ == "__main__":  # pragma: no cover
-    import tempfile
+def _load_dotenv(path: str | Path = ".env") -> None:
+    """Populate os.environ from a .env file.  Nothing else in the package reads
+    it, so a live run had to be launched with the key already exported."""
+    p = Path(path)
+    if not p.exists():
+        return
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        if v.strip():
+            os.environ.setdefault(k.strip(), v.strip())
 
-    tmp = Path(tempfile.mkdtemp())
-    m = Memory(base_dir=tmp / "mem")
-    lg = Ledger(tmp / "ledger.db")
-    res = run_loop(
-        run_id="smoke", max_generations=2, checkpoint_path=tmp / "cp.db",
-        memory=m, ledger=lg, llm_mode="mock", do_holdout_peek=False,
-        price_panel=synthetic_price_panel(n_days=700, n_symbols=20),
-        report_path=tmp / "p10_report.md",
+
+def main(argv: list[str] | None = None) -> int:  # pragma: no cover
+    ap = argparse.ArgumentParser(
+        prog="python -m src.loop",
+        description="Run the Phase-10 alpha research loop.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""examples:
+  python -m src.loop --smoke
+  python -m src.loop --mode live --generations 10 --run-id live_1
+  python -m src.loop --mode live --run-id live_1 --resume
+  python -m src.loop --mode live --run-id live_1 --resume --stop-after 3
+""",
     )
-    print("status:", res.status, "| accepted:", res.accepted_card_ids,
-          "| trials:", res.n_trials, "| max variants:", res.max_variant_count())
+    ap.add_argument("--run-id", default="run", help="run identifier (default: run)")
+    ap.add_argument("--mode", default=None, choices=["mock", "live", "offline"],
+                    help="LLM mode; overrides $LLM_MODE (default: $LLM_MODE or mock)")
+    ap.add_argument("-n", "--generations", type=int, default=10,
+                    help="max theses to attempt (default: 10)")
+    ap.add_argument("--horizon", type=int, default=5,
+                    help="forward-return horizon in days (default: 5)")
+    ap.add_argument("--resume", action="store_true",
+                    help="continue from the checkpoint for this run-id")
+    ap.add_argument("--stop-after", type=int, default=None, metavar="N",
+                    help="halt after N generations this invocation (use with "
+                         "--resume to step one generation at a time)")
+    ap.add_argument("--checkpoint", default=None, metavar="PATH",
+                    help="checkpoint db (default: artifacts/<run-id>/ck.db)")
+    ap.add_argument("--report", default=None, metavar="PATH",
+                    help="markdown report (default: reports/<run-id>.md)")
+    ap.add_argument("--no-holdout-peek", action="store_true",
+                    help="never spend a holdout peek in Gate B")
+    ap.add_argument("--no-throttle", action="store_true",
+                    help="skip rate-limit sleeps (mock/offline only)")
+    ap.add_argument("--stop-epsilon", type=float, default=STOP_EPSILON_DEFAULT,
+                    help=f"marginal-IC increment below which a generation counts "
+                         f"as lean (default: {STOP_EPSILON_DEFAULT}); pass a large "
+                         f"negative number to disable the early stop")
+    ap.add_argument("--stop-k", type=int, default=STOP_K_DEFAULT,
+                    help=f"consecutive lean generations before halting "
+                         f"(default: {STOP_K_DEFAULT})")
+    ap.add_argument("--curriculum-every", type=int, default=CURRICULUM_EVERY_DEFAULT,
+                    help="rotate the mandatory red-team regime every N generations")
+    ap.add_argument("--sandbox", action="store_true",
+                    help="use a throwaway memory/ledger instead of data/ — leaves "
+                         "the real bandit, ledger and holdout-peek budget untouched")
+    ap.add_argument("--synthetic", action="store_true",
+                    help="use a synthetic price panel instead of data/panel")
+    ap.add_argument("--smoke", action="store_true",
+                    help="shorthand: --mode mock --synthetic --sandbox "
+                         "--no-holdout-peek -n 2")
+    ap.add_argument("--env-file", default=".env", metavar="PATH",
+                    help="dotenv file to load before running (default: .env)")
+    a = ap.parse_args(argv)
+
+    if a.smoke:
+        a.mode = a.mode or "mock"
+        a.synthetic = a.sandbox = a.no_holdout_peek = True
+        if a.generations == 10:
+            a.generations = 2
+
+    _load_dotenv(a.env_file)
+    if a.mode:
+        os.environ["LLM_MODE"] = a.mode
+        importlib.reload(_config)
+
+    if a.mode == "live" and not _config.GROQ_API_KEY:
+        ap.error("--mode live needs GROQ_API_KEY (export it or put it in .env)")
+
+    ck = Path(a.checkpoint) if a.checkpoint else (
+        _config.REPO_ROOT / "artifacts" / a.run_id / "ck.db")
+    ck.parent.mkdir(parents=True, exist_ok=True)
+    report = Path(a.report) if a.report else _config.REPORTS_DIR / f"{a.run_id}.md"
+
+    mem = led = None
+    if a.sandbox:
+        tmp = Path(tempfile.mkdtemp(prefix=f"{a.run_id}_"))
+        mem, led = Memory(base_dir=tmp / "mem"), Ledger(tmp / "ledger.db")
+        print(f"[sandbox] memory + ledger under {tmp}")
+
+    panel = (synthetic_price_panel(n_days=700, n_symbols=20)
+             if a.synthetic else build_price_panel())
+
+    res = run_loop(
+        run_id=a.run_id,
+        max_generations=a.generations,
+        checkpoint_path=ck,
+        price_panel=panel,
+        memory=mem,
+        ledger=led,
+        llm_mode=a.mode,
+        horizon=a.horizon,
+        resume=a.resume,
+        stop_after_generation=a.stop_after,
+        do_holdout_peek=not a.no_holdout_peek,
+        throttle=not a.no_throttle,
+        stop_epsilon=a.stop_epsilon,
+        stop_k=a.stop_k,
+        curriculum_every=a.curriculum_every,
+        report_path=report,
+    )
+    print(f"status: {res.status} ({res.stopped_reason})")
+    print(f"generations: {len(res.generations)} | accepted: {res.accepted_card_ids} "
+          f"| trials: {res.n_trials} | peeks: {res.holdout_peeks_used}")
+    for g in res.generations:
+        print(f"  gen {g['generation']}  {str(g.get('family')):16s} "
+              f"{g['verdict']:8s} {str(g.get('reject_reason') or '')[:90]}")
+    print(f"report: {report}")
+    return 0 if res.status != "error" else 1
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

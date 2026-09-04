@@ -602,6 +602,34 @@ class BanditState:
     def row(self, family: str) -> dict:
         return dict(self._state.get(family, {}))
 
+    def suggest(self, generation: int = 0, exclude: tuple[str, ...] = ()) -> str:
+        """The family to explore next — a *decidable* answer where ``max()`` on
+        :meth:`allocation` is not.
+
+        With no reward yet every share is exactly ``1/len(families)``, so
+        ``max(alloc, key=alloc.get)`` returns whichever key sorts first and the
+        loop pulls that one arm forever.  This breaks the tie the way a bandit
+        should: **an unpulled arm always beats a pulled one**, then higher
+        allocation, then fewer pulls, and finally a deterministic rotation on
+        ``generation`` so repeated ties still walk the whole family list.
+        """
+        alloc = self.allocation()
+        pool = [f for f in self.families() if f not in exclude] or self.families()
+        if not pool:
+            return "liquidity"
+
+        def pulls(f: str) -> int:
+            return int(self._state.get(f, {}).get("n_pulls", 0))
+
+        # rank key: unpulled first, then allocation desc, then pulls asc
+        best = max(pool, key=lambda f: (pulls(f) == 0, round(alloc.get(f, 0.0), 12), -pulls(f)))
+        key = (pulls(best) == 0, round(alloc.get(best, 0.0), 12), -pulls(best))
+        tied = sorted(
+            f for f in pool
+            if (pulls(f) == 0, round(alloc.get(f, 0.0), 12), -pulls(f)) == key
+        )
+        return tied[int(generation) % len(tied)]
+
     def allocation(self) -> dict[str, float]:
         """Budget share per family for the next round.  Sums to 1.0; every value
         is ``>= EXPLORATION_FLOOR`` and therefore **strictly positive**."""

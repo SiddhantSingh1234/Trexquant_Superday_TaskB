@@ -603,7 +603,15 @@ class LLMClient:
             try:
                 resp = client.chat.completions.create(
                     model=model,
-                    messages=[{"role": "user", "content": prompt}],
+                    messages=[
+                        # Groq rejects response_format=json_object unless the word
+                        # "json" appears in the messages; the system line also
+                        # steers the model to emit a bare object.
+                        {"role": "system",
+                         "content": "Respond with a single valid JSON object and "
+                                    "nothing else. No prose, no markdown fences."},
+                        {"role": "user", "content": prompt},
+                    ],
                     temperature=0.2,
                     response_format={"type": "json_object"},
                 )

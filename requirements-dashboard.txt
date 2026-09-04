@@ -1,0 +1,7 @@
+# Dashboard-only dependencies (DASHBOARD_PLAN.md Section 0.2).
+# Everything in the project's requirements.txt is also assumed available.
+# This is the COMPLETE allowed list — do not add others.
+streamlit>=1.36
+plotly>=5.22
+altair>=5.3
+graphviz>=0.20

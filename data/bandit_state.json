@@ -2,11 +2,13 @@
   "exploration_floor": 0.05,
   "families": {
     "liquidity": {
-      "cumulative_reward": 0.0,
+      "cumulative_reward": 0.04000570115331806,
       "family": "liquidity",
-      "last_k_deltas": [],
-      "n_pulls": 0,
-      "tokens_spent": 0
+      "last_k_deltas": [
+        0.04000570115331806
+      ],
+      "n_pulls": 1,
+      "tokens_spent": 1
     },
     "microstructure": {
       "cumulative_reward": 0.0,
@@ -72,5 +74,5 @@
       "tokens_spent": 0
     }
   },
-  "updated_at": "2026-09-02T22:05:57+00:00"
+  "updated_at": "2026-09-04T14:13:08+00:00"
 }

@@ -71,6 +71,20 @@ def validate_corpus(entries: list[dict]) -> None:
         seen.add(e["name"])
 
 
+# memory.FAMILIES (the loop's arms) and the corpus's own `family` labels were
+# written independently and do not line up: `sentiment_proxy` never matched
+# `sentiment`, and `value_proxy` / `quality_proxy` matched nothing at all, so
+# three of ten arms retrieved an EMPTY corpus and ideated with no grounding.
+CORPUS_FAMILY_ALIASES: dict[str, tuple[str, ...]] = {
+    "sentiment_proxy": ("sentiment",),
+    "value_proxy": ("fundamental",),
+    "quality_proxy": ("fundamental",),
+}
+# NB: only names that are NOT themselves corpus families are aliased, so
+# retrieve(family="liquidity") stays exactly liquidity-family (test_p8_agents
+# asserts that invariant).
+
+
 def retrieve(entries: list[dict], *, family: str | None = None,
              keywords: list[str] | None = None, limit: int = 12) -> list[dict]:
     """Family filter (exact, case-insensitive) then keyword ranking.
@@ -83,7 +97,8 @@ def retrieve(entries: list[dict], *, family: str | None = None,
     pool = entries
     if family is not None:
         fam = family.lower()
-        pool = [e for e in pool if e["family"].lower() == fam]
+        wanted = CORPUS_FAMILY_ALIASES.get(fam, (fam,))
+        pool = [e for e in pool if e["family"].lower() in wanted]
     if not kw:
         return pool[:limit]
 

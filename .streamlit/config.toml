@@ -1,0 +1,17 @@
+# Alpha Factory Dashboard — theme (D0 skeleton; D8 finalises).
+# primaryColor matches charts.PALETTE['accent'].
+
+[theme]
+base = "dark"
+primaryColor = "#4C9BE8"
+backgroundColor = "#0E1117"
+secondaryBackgroundColor = "#1A1F2B"
+textColor = "#E6E6E6"
+font = "sans serif"
+
+[server]
+headless = true
+runOnSave = true
+
+[browser]
+gatherUsageStats = false

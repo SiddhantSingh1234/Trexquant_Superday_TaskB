@@ -30,14 +30,23 @@ class Planner:
 
     def run(self, *, allocation: dict | None = None,
             elite_theses: list[str] | None = None,
-            total_token_budget: int = 400_000) -> dict:
+            total_token_budget: int = 400_000,
+            top_family: str | None = None,
+            pulls: dict | None = None,
+            tried_this_run: list[str] | None = None) -> dict:
         allocation = allocation or {}
-        top_family = (
-            max(allocation, key=allocation.get) if allocation else "liquidity"
-        )
+        # ``top_family`` comes from BanditState.suggest, which breaks the
+        # all-equal-allocation tie properly.  Falling back to max() here would
+        # reintroduce the degenerate "always the first key" pick.
+        if top_family is None:
+            top_family = (
+                max(allocation, key=allocation.get) if allocation else "liquidity"
+            )
         prompt = self._static + self._dyn.format(
             top_family=top_family,
             allocation=json.dumps(allocation, sort_keys=True),
+            pulls=json.dumps(pulls or {}, sort_keys=True),
+            tried=json.dumps(tried_this_run or []),
             elite=json.dumps(elite_theses or []),
             total_budget=int(total_token_budget),
             max_variants=config.MAX_VARIANTS_PER_THESIS,

@@ -1,0 +1,1172 @@
+<title>Alpha Factory Deck</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@500;600&display=swap">
+<style>
+/* ================================================================ tokens == */
+:root{
+  --bg:#EEF0EC;
+  --surface:#F7F8F6;
+  --surface-2:#E3E7E2;
+  --fg:#141B1F;
+  --fg-2:#43524F;
+  --fg-3:#6C7A76;
+  --rule:#C6CDC7;
+  --rule-2:#9EAAA4;
+  --accent:#14675A;
+  --accent-soft:#D8E6E2;
+  --gold:#8A6210;
+  --gold-soft:#F0E5CD;
+  --kill:#94322A;
+  --kill-soft:#F1DDD9;
+  --shadow:0 1px 0 rgba(13,19,23,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1317; --surface:#141C21; --surface-2:#1D272C;
+    --fg:#E4EAE6; --fg-2:#AAB8B3; --fg-3:#7E8D88;
+    --rule:#2B383D; --rule-2:#425155;
+    --accent:#57BCA8; --accent-soft:#123430;
+    --gold:#DCA745; --gold-soft:#342810;
+    --kill:#E2806F; --kill-soft:#371B17;
+    --shadow:0 1px 0 rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1317; --surface:#141C21; --surface-2:#1D272C;
+  --fg:#E4EAE6; --fg-2:#AAB8B3; --fg-3:#7E8D88;
+  --rule:#2B383D; --rule-2:#425155;
+  --accent:#57BCA8; --accent-soft:#123430;
+  --gold:#DCA745; --gold-soft:#342810;
+  --kill:#E2806F; --kill-soft:#371B17;
+  --shadow:0 1px 0 rgba(0,0,0,.35);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg); margin:0;
+  font-family:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.mono,code{font-family:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums}
+
+/* ================================================================== deck == */
+.deck{max-width:1320px;margin:0 auto;padding:28px 20px 80px;display:flex;flex-direction:column;gap:26px}
+.slide{
+  position:relative; background:var(--surface); color:var(--fg);
+  border:1px solid var(--rule); box-shadow:var(--shadow);
+  aspect-ratio:16/9; width:100%;
+  padding:26px 40px 28px; overflow:hidden;
+  display:flex; flex-direction:column; container-type:inline-size;
+}
+.slide > *{font-size:1cqw}
+
+.rail{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--rule);padding-bottom:7px;margin-bottom:15px;flex:none}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:.97cqw;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.rail .sep{flex:1}
+.pageno{font-family:"IBM Plex Mono",monospace;font-size:.86cqw;color:var(--fg-3);letter-spacing:.06em}
+
+h1.stitle{font-family:"IBM Plex Serif",Georgia,serif;font-weight:600;font-size:2.36cqw;line-height:1.14;margin:0;letter-spacing:-.006em;text-wrap:balance}
+p.stand{font-size:1.2cqw;color:var(--fg-2);margin:6px 0 0;max-width:88ch;line-height:1.4}
+.body{flex:1;min-height:0;display:flex;flex-direction:column;gap:13px;margin-top:15px}
+
+.grid{display:grid;gap:15px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g5-7{grid-template-columns:5fr 7fr}
+.g7-5{grid-template-columns:7fr 5fr}
+.g6-5{grid-template-columns:6fr 5fr}
+
+h2.lab{font-family:"IBM Plex Mono",monospace;font-size:.87cqw;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);font-weight:600;margin:0 0 7px}
+
+/* --- the IN / OUT strip that every stage slide carries --- */
+.io{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:0 14px;align-items:start;
+    border-top:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2);padding:9px 0}
+.io .tag{font-family:"IBM Plex Mono",monospace;font-size:.82cqw;font-weight:600;letter-spacing:.13em;color:var(--accent);padding-top:2px}
+.io .tag.o{color:var(--fg-3)}
+.io .v{font-size:1.02cqw;line-height:1.38;color:var(--fg-2)}
+.io .v b{color:var(--fg);font-weight:600}
+
+ul.pts{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:7px;font-size:1.1cqw;line-height:1.36}
+ul.pts li{padding-left:1.1em;position:relative}
+ul.pts li::before{content:"-";position:absolute;left:.1em;color:var(--rule-2);font-family:"IBM Plex Mono",monospace}
+ul.pts.num{counter-reset:p}
+ul.pts.num li{counter-increment:p}
+ul.pts.num li::before{content:counter(p);color:var(--accent);font-weight:600;font-size:.9em}
+
+table{border-collapse:collapse;width:100%;font-size:1.04cqw;line-height:1.32}
+table th{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:.82cqw;letter-spacing:.1em;text-transform:uppercase;
+         color:var(--fg-3);text-align:left;border-bottom:1px solid var(--rule-2);padding:0 8px 5px 0;vertical-align:bottom}
+table td{padding:5px 8px 5px 0;border-bottom:1px solid var(--rule);vertical-align:top}
+table tr:last-child td{border-bottom:none}
+td.n,th.n{text-align:right;padding-right:12px;white-space:nowrap;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto}
+
+b,strong{font-weight:600}
+.k{color:var(--kill);font-weight:600}
+.a{color:var(--accent);font-weight:600}
+.w{color:var(--gold);font-weight:600}
+.dim{color:var(--fg-3)}
+
+.pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:.76cqw;font-weight:600;
+      letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;white-space:nowrap}
+.pill.ok{background:var(--accent-soft);color:var(--accent)}
+.pill.no{background:var(--kill-soft);color:var(--kill)}
+.pill.pend{background:var(--gold-soft);color:var(--gold)}
+
+.panel{background:var(--bg);border:1px solid var(--rule);padding:11px 13px}
+.panel.accent{border-left:3px solid var(--accent)}
+.panel.kill{border-left:3px solid var(--kill)}
+.panel.gold{border-left:3px solid var(--gold)}
+.panel p{margin:0;font-size:1.06cqw;line-height:1.4}
+.panel p + p{margin-top:6px}
+
+/* --- measured-number strip --- */
+.figs{display:flex;border-top:1px solid var(--rule-2);border-bottom:1px solid var(--rule-2)}
+.fig{flex:1;padding:9px 13px 10px;border-right:1px solid var(--rule)}
+.fig:last-child{border-right:none}
+.fig .v{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;font-size:1.78cqw;font-weight:600;line-height:1.05;letter-spacing:-.02em}
+.fig .v.k{color:var(--kill)} .fig .v.a{color:var(--accent)}
+.fig .l{font-size:.86cqw;color:var(--fg-3);margin-top:4px;line-height:1.32}
+
+.note{font-size:.88cqw;color:var(--fg-3);line-height:1.4;margin-top:auto;padding-top:9px;border-top:1px solid var(--rule)}
+
+/* --- cover --- */
+.slide.cover{justify-content:center;padding:0 62px;background:var(--bg)}
+.cover .kicker{font-family:"IBM Plex Mono",monospace;font-size:1.03cqw;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.cover h1{font-family:"IBM Plex Serif",Georgia,serif;font-weight:600;font-size:4.4cqw;line-height:1.04;margin:18px 0 0;letter-spacing:-.022em;max-width:21ch}
+.cover .rule{width:88px;height:2px;background:var(--accent);margin:24px 0}
+.cover .stand2{font-size:1.4cqw;color:var(--fg-2);max-width:58ch;line-height:1.46}
+.cover .meta{margin-top:34px;display:flex;gap:32px;flex-wrap:wrap;font-family:"IBM Plex Mono",monospace;font-size:.86cqw;color:var(--fg-3);letter-spacing:.03em}
+.cover .meta b{color:var(--fg-2);font-weight:600}
+
+/* --- flow diagram --- */
+figure.flow{margin:0;flex:1;display:flex;flex-direction:column;min-height:0}
+figure.flow svg{width:100%;height:auto;flex:1;min-height:0;color:var(--fg)}
+figure.flow figcaption{font-size:.88cqw;color:var(--fg-3);padding-top:8px;line-height:1.4}
+.n-box{fill:var(--surface-2);stroke:var(--rule-2);stroke-width:1.2}
+.n-agent{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.2}
+.n-gate{fill:var(--surface);stroke:var(--accent);stroke-width:2.6}
+.n-gate-t{fill:var(--surface);stroke:var(--fg-2);stroke-width:2.6}
+.n-card{fill:var(--accent);stroke:var(--accent);stroke-width:1.2}
+.t-h{font:600 12.5px "IBM Plex Mono",monospace;fill:currentColor}
+.t-h-inv{font:600 12.5px "IBM Plex Mono",monospace;fill:var(--surface)}
+.t-b{font:400 10.7px "IBM Plex Sans",sans-serif;fill:var(--fg-2)}
+.t-b-inv{font:400 10.7px "IBM Plex Sans",sans-serif;fill:var(--surface)}
+.t-e{font:600 9.6px "IBM Plex Mono",monospace;fill:var(--accent);letter-spacing:.06em}
+.t-k{font:600 9.6px "IBM Plex Mono",monospace;fill:var(--kill);letter-spacing:.06em}
+.ln{stroke:var(--fg-2);stroke-width:1.4;fill:none}
+.ln-k{stroke:var(--kill);stroke-width:1.3;fill:none;stroke-dasharray:5 4}
+.ln-d{stroke:var(--rule-2);stroke-width:1.3;fill:none;stroke-dasharray:2 4}
+
+/* --- matrix --- */
+table.matrix td{padding:7px 10px 7px 0}
+table.matrix td:first-child{font-weight:600;width:20%}
+table.matrix td:last-child{color:var(--kill);width:32%}
+table.matrix th:last-child{color:var(--kill)}
+
+/* --- bad-example columns --- */
+.colhead{border-top:2px solid var(--accent);padding-top:7px;margin-bottom:6px}
+.colhead.r{border-top-color:var(--kill)}
+.colhead .n{font-family:"IBM Plex Mono",monospace;font-size:.78cqw;color:var(--fg-3);letter-spacing:.1em}
+.colhead .t{font-weight:600;font-size:1.13cqw;line-height:1.22;margin-top:3px}
+.beats{display:flex;flex-direction:column;font-size:.99cqw;line-height:1.34}
+.beat{display:grid;grid-template-columns:5.4em 1fr;gap:0 8px;padding:6px 0;border-bottom:1px dotted var(--rule)}
+.beat:last-child{border-bottom:none}
+.beat .tg{font-family:"IBM Plex Mono",monospace;font-size:.76cqw;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-3);padding-top:1px}
+
+/* --- references --- */
+.refhead{font-family:"IBM Plex Mono",monospace;font-size:.78cqw;letter-spacing:.14em;text-transform:uppercase;
+         color:var(--fg-3);font-weight:600;padding:0 0 4px;border-bottom:1px solid var(--rule-2);margin-top:9px}
+.refhead:first-child{margin-top:0}
+.ref{padding:5px 0;border-bottom:1px solid var(--rule);font-size:.87cqw;line-height:1.34}
+.ref:last-child{border-bottom:none}
+.ref .t{font-weight:600}
+.ref .t a{color:inherit;text-decoration:none;border-bottom:1px solid var(--rule-2)}
+.ref .t a:hover{color:var(--accent);border-bottom-color:var(--accent)}
+.ref .u{color:var(--fg-2)}
+.ref .u b{color:var(--accent);font-weight:600}
+
+/* --- chrome --- */
+.chrome{position:fixed;right:14px;bottom:14px;z-index:20;display:flex;gap:6px;align-items:center;
+        background:var(--surface);border:1px solid var(--rule);padding:5px 9px;
+        font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-2);box-shadow:var(--shadow)}
+.chrome button{font:inherit;background:none;border:1px solid var(--rule);color:var(--fg-2);padding:1px 7px;cursor:pointer;line-height:1.5}
+.chrome button:hover{border-color:var(--accent);color:var(--accent)}
+.chrome button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+@media print{
+  @page{size:1320px 743px;margin:0}
+  body{background:#fff}
+  .deck{max-width:none;margin:0;padding:0;gap:0}
+  .chrome{display:none}
+  .slide{border:none;box-shadow:none;break-after:page;page-break-after:always;height:743px;aspect-ratio:auto}
+  .slide:last-child{break-after:auto;page-break-after:auto}
+}
+</style>
+
+<div class="deck">
+
+<!-- =============================================================== 00 ==== -->
+<section class="slide cover">
+  <div class="kicker">Trexquant Superday / Topic B</div>
+  <h1>An alpha factory built to reject its own output</h1>
+  <div class="rule"></div>
+  <p class="stand2">An LLM agent loop that invents economic theses, implements them as formulas, and then spends most of its effort trying to prove them wrong.</p>
+  <div class="meta">
+    <span><b>Universe</b> 200 most liquid Indian equities</span>
+    <span><b>Span</b> 2014-01-01 to 2025-12-31</span>
+    <span><b>Data</b> 4,988,593 price rows</span>
+    <span><b>Tests</b> 315 passing</span>
+  </div>
+</section>
+
+<!-- =============================================================== 01 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Task specification</span><span class="sep"></span><span class="pageno">01 / 17</span></div>
+  <h1 class="stitle">One finished unit of work is an Alpha Card</h1>
+  <p class="stand">An alpha signal is one number per stock per day. Only the ranking matters, so RankIC is the grade.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">feature panel, point-in-time | universe | deterministic backtester | LLM token budget B | research corpus | production factor book</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>one Alpha Card</b></span>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">The eight parts of a card</h2>
+        <ul class="pts num" style="font-size:1.06cqw">
+          <li><b>Economic thesis</b> - mechanism, counterparty, why not arbitraged</li>
+          <li><b>Pre-registered sign</b> and horizon, hashed and timestamped</li>
+          <li><b>Formula</b> over causal operators, with its canonical AST</li>
+          <li><b>Backtest report</b> - RankIC, ICIR, Sharpe, turnover, MDD, decay</li>
+          <li><b>Honesty audit</b> - marginal IC, Deflated Sharpe, t, PBO, peek spent</li>
+          <li><b>Red-Team report</b> - which attacks ran, and each result</li>
+          <li><b>Verdict and lineage</b> - thesis, parent formula, edit, generation</li>
+          <li><b>Provenance</b> - fields used, read off the AST leaves</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel">
+          <h2 class="lab" style="margin-bottom:6px">Measurement contract</h2>
+          <table style="font-size:1.02cqw">
+            <tr><td style="width:30%"><b>Label</b></td><td>next-day return, cross-sectionally demeaned</td></tr>
+            <tr><td><b>Timing</b></td><td>features to close of t, trade t+1 open, earn t+1 open to t+2 open</td></tr>
+            <tr><td><b>Primary</b></td><td>RankIC, with IC and ICIR alongside</td></tr>
+            <tr><td><b>Decay</b></td><td>h in {1, 2, 3, 5, 10, 21}</td></tr>
+            <tr><td><b>Costs</b></td><td>15 bps per side, swept 5 / 15 / 30 - robustness, not the grade</td></tr>
+          </table>
+        </div>
+        <div class="panel accent">
+          <p><b>A rejected card is not discarded.</b> It carries its death certificate into memory, and that is the substrate for improvement across generations.</p>
+        </div>
+      </div>
+    </div>
+    <div class="note">Prototype scope is a faithful slice, not the whole design. The governing principle throughout: <b>a partial result you understand beats a complete one you cannot defend.</b></div>
+  </div>
+</section>
+
+<!-- =============================================================== 02 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Architecture</span><span class="sep"></span><span class="pageno">02 / 17</span></div>
+  <h1 class="stitle">Nine stages, four gates, one feedback loop</h1>
+  <p class="stand">Agency where there is a <b>decision</b>. Deterministic code where it is a <b>fixed computation</b>. Every verdict threshold is code.</p>
+  <div class="body" style="margin-top:11px">
+  <figure class="flow">
+    <svg viewBox="0 0 1240 604" role="img" aria-label="Nine-stage pipeline. Inputs feed the Planner, Librarian and Hypothesis agents, then Gate A Economics. Survivors enter the capped implementation loop, a fresh-fold confirmation on Val-B, and the Tier-2 backtest battery, then Gate B Honesty and Gate C Red-Team. Survivors emit an Alpha Card. Everything, accepted or rejected, is written to memory, which feeds the next generation.">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        <marker id="ahk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#94322A"/></marker>
+      </defs>
+
+      <rect class="n-box" x="54" y="48" width="176" height="68"/>
+      <text class="t-h" x="66" y="70">INPUTS</text>
+      <text class="t-b" x="66" y="87">panel, universe, book,</text>
+      <text class="t-b" x="66" y="102">corpus, token budget</text>
+
+      <rect class="n-agent" x="270" y="48" width="176" height="68"/>
+      <text class="t-h" x="282" y="70">S1 PLANNER</text>
+      <text class="t-b" x="282" y="87">bandit picks a family,</text>
+      <text class="t-b" x="282" y="102">allocates tokens, caps 20</text>
+
+      <rect class="n-agent" x="486" y="48" width="176" height="68"/>
+      <text class="t-h" x="498" y="70">S2 LIBRARIAN</text>
+      <text class="t-b" x="498" y="87">corpus + memory into</text>
+      <text class="t-b" x="498" y="102">an evidence brief</text>
+
+      <rect class="n-agent" x="702" y="48" width="176" height="68"/>
+      <text class="t-h" x="714" y="70">S3 HYPOTHESIS</text>
+      <text class="t-b" x="714" y="87">thesis, counterparty</text>
+      <text class="t-e" x="714" y="103">+ PRE-REGISTERED SIGN</text>
+
+      <rect class="n-gate" x="918" y="48" width="176" height="68"/>
+      <text class="t-h" x="930" y="70">GATE A ECONOMICS</text>
+      <text class="t-b" x="930" y="87">five-part rubric,</text>
+      <text class="t-b" x="930" y="102">author is not the judge</text>
+
+      <line class="ln" x1="230" y1="82" x2="264" y2="82" marker-end="url(#ah)"/>
+      <line class="ln" x1="446" y1="82" x2="480" y2="82" marker-end="url(#ah)"/>
+      <line class="ln" x1="662" y1="82" x2="696" y2="82" marker-end="url(#ah)"/>
+      <line class="ln" x1="878" y1="82" x2="912" y2="82" marker-end="url(#ah)"/>
+
+      <path class="ln" d="M1006,116 L1006,166 L466,166 L466,206" marker-end="url(#ah)"/>
+      <text class="t-e" x="734" y="160">PASS, BEFORE ANY CODE IS WRITTEN</text>
+
+      <rect class="n-box" x="270" y="212" width="392" height="68"/>
+      <text class="t-h" x="282" y="234">S5 IMPLEMENTATION LOOP</text>
+      <text class="t-b" x="282" y="251">Coder, AST + complexity, free pre-filter (compile,</text>
+      <text class="t-b" x="282" y="266">AST-duplicate), Tier-1 RankIC on VAL-A, Judge</text>
+      <path class="ln" d="M300,212 L300,190 L440,190 L440,212" marker-end="url(#ah)"/>
+      <text class="t-e" x="452" y="194">REFINE, 20 VARIANTS MAX, HARD CAP</text>
+
+      <rect class="n-box" x="702" y="212" width="176" height="68"/>
+      <text class="t-h" x="714" y="234">FRESH FOLD</text>
+      <text class="t-b" x="714" y="251">confirm on VAL-B, which</text>
+      <text class="t-b" x="714" y="266">no variant ever touched</text>
+
+      <rect class="n-box" x="918" y="212" width="176" height="68"/>
+      <text class="t-h" x="930" y="234">S6 TIER-2</text>
+      <text class="t-b" x="930" y="251">walk-forward, CSCV,</text>
+      <text class="t-b" x="930" y="266">purge + embargo, costs</text>
+
+      <line class="ln" x1="662" y1="246" x2="696" y2="246" marker-end="url(#ah)"/>
+      <text class="t-e" x="592" y="240">PROMOTE 1</text>
+      <line class="ln" x1="878" y1="246" x2="912" y2="246" marker-end="url(#ah)"/>
+
+      <path class="ln" d="M1006,280 L1006,330 L466,330 L466,370" marker-end="url(#ah)"/>
+
+      <rect class="n-gate-t" x="270" y="376" width="392" height="68"/>
+      <text class="t-h" x="282" y="398">GATE B HONESTY, deterministic and ordered</text>
+      <text class="t-b" x="282" y="415">1 orthogonalise vs book | 2 marginal-IC novelty, free</text>
+      <text class="t-b" x="282" y="430">3 Deflated Sharpe on the residual, t &gt; 3, PBO | 4 rationed peek</text>
+
+      <rect class="n-gate" x="702" y="376" width="176" height="68"/>
+      <text class="t-h" x="714" y="398">GATE C RED-TEAM</text>
+      <text class="t-b" x="714" y="415">fixed menu of 11 tests,</text>
+      <text class="t-b" x="714" y="430">rejection-only</text>
+
+      <rect class="n-card" x="918" y="376" width="176" height="68"/>
+      <text class="t-h-inv" x="930" y="398">ALPHA CARD</text>
+      <text class="t-b-inv" x="930" y="415">thesis, sign, formula,</text>
+      <text class="t-b-inv" x="930" y="430">audit, lineage, provenance</text>
+
+      <line class="ln" x1="662" y1="410" x2="696" y2="410" marker-end="url(#ah)"/>
+      <line class="ln" x1="878" y1="410" x2="912" y2="410" marker-end="url(#ah)"/>
+      <text class="t-e" x="596" y="404">PASS</text>
+
+      <path class="ln-k" d="M1094,82 L1160,82 L1160,474 L454,474 L454,494" marker-end="url(#ahk)"/>
+      <path class="ln-k" d="M270,410 L232,410 L232,474"/>
+      <path class="ln-k" d="M702,444 L702,474"/>
+      <text class="t-k" x="866" y="468">REJECT OR KILLED, INTO THE DEATH CERTIFICATE</text>
+
+      <rect class="n-agent" x="54" y="500" width="800" height="56"/>
+      <text class="t-h" x="66" y="522">S9 MEMORY AND REFLECTION</text>
+      <text class="t-b" x="66" y="540">write lesson as an edit motif | update prompts and bandit priors | append trial ledger | record lineage</text>
+
+      <rect class="n-box" x="894" y="500" width="200" height="56" stroke-dasharray="4 3"/>
+      <text class="t-h" x="906" y="522">PORTFOLIO</text>
+      <text class="t-b" x="906" y="540">off-loop, regime-gated</text>
+      <path class="ln-d" d="M1006,444 L1006,494" marker-end="url(#ah)"/>
+
+      <path class="ln" d="M54,528 L22,528 L22,150 L358,150 L358,122" marker-end="url(#ah)"/>
+      <text class="t-e" x="42" y="144">NEXT GENERATION</text>
+
+      <rect class="n-agent" x="54" y="574" width="13" height="13"/>
+      <text class="t-b" x="73" y="585">LLM agent</text>
+      <rect class="n-box" x="150" y="574" width="13" height="13"/>
+      <text class="t-b" x="169" y="585">deterministic code</text>
+      <rect class="n-gate" x="290" y="574" width="13" height="13" stroke-width="2.2"/>
+      <text class="t-b" x="309" y="585">gate, hard verdict</text>
+      <line class="ln-k" x1="424" y1="581" x2="456" y2="581"/>
+      <text class="t-b" x="464" y="585">rejection path. Every reject is recorded, none is discarded.</text>
+    </svg>
+    <figcaption>Gate ordering is deliberate. <b>Gate A</b> kills before any code is written. The <b>pre-filter</b> inside S5 is free, so it costs zero trials. <b>Gate B</b> checks novelty before statistics, so a scarce holdout peek is never spent on a clone. <b>Gate C</b> runs last because it can only reject, never promote.</figcaption>
+  </figure>
+  </div>
+</section>
+
+<!-- =============================================================== 03 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">The input</span><span class="sep"></span><span class="pageno">03 / 17</span></div>
+  <h1 class="stitle">A universe defined by a rule, not by a list</h1>
+  <p class="stand">Everything downstream is arithmetic on this panel. If it is biased, every later result is quietly too good.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">NSE daily bhavcopy, 2014 to 2025 | NSE corporate-action feed | NSE industry list</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>monthly 200-name universe</b> | adjusted price panel | feature panel with demeaned labels</span>
+    </div>
+    <p style="font-size:1.1cqw;margin:0;line-height:1.4"><b>The rule is the universe.</b> Each month, take the 200 names with the highest trailing 63-day median turnover, requiring 252 days of history, from that month's own bhavcopy. The rule reads only the past, so a stock is in it exactly while it was liquid, <b>including the ones that later went bankrupt.</b></p>
+    <div class="figs">
+      <div class="fig"><div class="v a">2.6e-17</div><div class="l">Coverage slope, members per day. Yearly mean is <b>200.0 every year</b>, 2015 to 2025. No survivorship slope.</div></div>
+      <div class="fig"><div class="v a">72 / 72</div><div class="l">Month-ends <b>bit-identical</b> after truncating the data at 2020-01-01, and again at 2022-06-30. No look-ahead.</div></div>
+      <div class="fig"><div class="v a">100.0%</div><div class="l">Of 2,697 days on which RELIANCE, TCS, SBIN, TATASTEEL, MARUTI and ONGC are <b>all present</b>.</div></div>
+      <div class="fig"><div class="v">2019-12</div><div class="l">DHFL leaves the universe when its <b>turnover</b> collapsed, not when it delisted. The correct behaviour.</div></div>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">What was built underneath it</h2>
+        <table>
+          <tr><td style="width:30%"><b>Prices</b></td><td>4,988,593 rows, 3,178 symbols, 2,961 trading days. Keyed by <b>ISIN, not ticker</b>, so a rename stays one continuous series</td></tr>
+          <tr><td><b>Corporate actions</b></td><td>26,325 events parsed. 830 splits and bonuses back-adjusted across 596 symbols, <b>anchored to the observed price break</b> rather than trusting the announced ex-date</td></tr>
+          <tr><td><b>Cross-check</b></td><td>daily-return correlation against yfinance on the 30 most liquid names: <b>median 0.9963</b>, 25 of 30 above 0.99. The five below are explained name by name</td></tr>
+          <tr><td><b>Panel</b></td><td>539,400 rows. Ten features plus a size proxy and sector. Labels demeaned cross-sectionally every day</td></tr>
+          <tr><td><b>Leak self-test</b></td><td>shift the whole panel forward one day and a known factor's RankIC must move. Shift it <b>backward</b> and the leak signature appears: <b>-0.3405</b></td></tr>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <h2 class="lab">Does the panel contain signal? Mean daily RankIC on VAL-A, IR in brackets</h2>
+          <table>
+            <tr><th>feature</th><th class="n">h=21</th><th>reads as</th></tr>
+            <tr><td class="mono">vol_21</td><td class="n">-0.082 [-11.9]</td><td>low-volatility anomaly</td></tr>
+            <tr><td class="mono">max_ret_21</td><td class="n">-0.072 [-14.6]</td><td>lottery, or MAX, effect</td></tr>
+            <tr><td class="mono">mom_126</td><td class="n">+0.063 [+9.1]</td><td>6 minus 1 month momentum</td></tr>
+            <tr><td class="mono">mom_21</td><td class="n">-0.013</td><td>1-month momentum is genuinely near zero in India</td></tr>
+          </table>
+        </div>
+        <div class="panel gold">
+          <h2 class="lab" style="margin-bottom:5px">Disclosed defects, all of them</h2>
+          <ul class="pts" style="font-size:.97cqw;gap:4px">
+            <li><b>delivery_pct starts 2019-10-01.</b> Zero coverage in TRAIN. Left as NaN, never fabricated</li>
+            <li><b>Dividends and demergers are not price-adjusted.</b> Nine jumps flagged and kept verbatim, not winsorised</li>
+            <li><b>No point-in-time fundamentals.</b> Free Indian fundamental data is not PIT, so using it would inject the exact look-ahead this system exists to catch. A rigor choice, not an oversight</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 03 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Stage S1 + S2</span><span class="sep"></span><span class="pageno">04 / 17</span></div>
+  <h1 class="stitle">Planner and Librarian: decide where to look next</h1>
+  <p class="stand">The only stage that spends token budget deciding <b>what not to try</b>.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">bandit state over 10 idea-families | past lessons | remaining token budget | 53-entry research corpus</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>chosen family</b>, token allocation, <b>variant budget</b>, evidence brief with citations</span>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">What each one decides</h2>
+        <ul class="pts">
+          <li><b>S1</b> allocates tokens by softmax over realised reward per family</li>
+          <li><b>5 percent exploration floor</b>: no family can ever be starved to zero</li>
+          <li><b>S1</b> writes the variant budget that S5 is forced to obey</li>
+          <li><b>S2</b> retrieves by family plus keyword. No embeddings, <b>no vector DB</b></li>
+          <li>Non-tradeable anomalies are removed <b>by code, not by the LLM</b></li>
+          <li>Stop rule: token exhaustion, then diminishing returns, then a hard cap</li>
+        </ul>
+        <div class="panel accent" style="margin-top:13px">
+          <p><b>Why no vector database.</b> A few hundred lessons. Numpy cosine is instant, and a vector DB is one more dependency that can break during a live demo.</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="figs" style="border-top:none">
+          <div class="fig"><div class="v">0.0574</div><div class="l">Share still held by the worst family after <b>50 consecutive failures</b></div></div>
+          <div class="fig"><div class="v">17 / 53</div><div class="l">Corpus anomalies flagged <b>not tradeable</b> with our data, and excluded</div></div>
+        </div>
+        <div class="panel">
+          <h2 class="lab" style="margin-bottom:6px">The corpus</h2>
+          <table style="font-size:1.02cqw">
+            <tr><td style="width:42%"><b>53 anomalies</b></td><td>across 10 idea-families</td></tr>
+            <tr><td><b>Sources</b></td><td>paper abstracts and published anomaly lists</td></tr>
+            <tr><td><b>Each entry</b></td><td>mechanism, counterparty, horizon, tradeable flag</td></tr>
+            <tr><td><b>Retrieval</b></td><td>exact family match, then keyword hit count</td></tr>
+          </table>
+        </div>
+        <div class="panel gold">
+          <p><b>Measured.</b> Ask the Librarian for a fundamental-data family and it returns <b>zero suggested angles</b> with every candidate listed under "excluded from suggestions". The agent is not trusted to remember what it cannot trade.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 04 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Stage S3 + Gate A</span><span class="sep"></span><span class="pageno">05 / 17</span></div>
+  <h1 class="stitle">Hypothesis and Gate A: commit to a story, and to a direction</h1>
+  <p class="stand">The cheapest possible rejection, and the only place a prediction can still be made honestly.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">evidence brief | idea family | prior lessons for this family</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>thesis + pre-registered sign</b>, sha256-hashed into the ledger, then pass or reject</span>
+    </div>
+    <div class="grid g5-7" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">Gate A rubric: all five, or reject</h2>
+        <ul class="pts num" style="font-size:1.06cqw">
+          <li>A named <b>mechanism</b></li>
+          <li>Who the <b>counterparty</b> is, and why they persistently lose</li>
+          <li>Why it has <b>not already been arbitraged</b> away</li>
+          <li><b>Horizon</b> and <b>regime</b></li>
+          <li>A <b>falsifiable</b> prediction, including the sign</li>
+        </ul>
+        <h2 class="lab" style="margin-top:14px">Three teeth</h2>
+        <ul class="pts">
+          <li>The rubric is hard, not advisory</li>
+          <li>A <b>different LLM client</b> scores it. The author never grades itself</li>
+          <li>The sign is hashed now and checked against the realised sign later</li>
+        </ul>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel accent">
+          <h2 class="lab" style="margin-bottom:6px">Innovation: the pre-registered sign</h2>
+          <p>Before any data is touched, the thesis is serialised to canonical JSON, <b>sha256-hashed and timestamped</b> into the trial ledger.</p>
+          <p>A signal that works only with the <b>opposite</b> sign to its own story is a <b>thesis failure, not a discovery</b>, and the mismatch never flips the sign to rescue it.</p>
+          <p class="dim" style="font-size:.97cqw">AlphaAgent aligns hypothesis and factor <em>post hoc</em>. AgonAlpha's reviewer audits sign logic <em>after</em> evaluation. We found nothing that commits a direction <em>before</em> evaluation and rejects on mismatch. This is our lead claim.</p>
+        </div>
+        <div class="figs">
+          <div class="fig"><div class="v a">hash &lt; bt</div><div class="l">Prereg hash is written at a strictly earlier event index than the first backtest. Asserted.</div></div>
+          <div class="fig"><div class="v a">0 calls</div><div class="l">A blank rubric field is rejected structurally, with no LLM call spent at all</div></div>
+        </div>
+        <div class="panel">
+          <p><b>Author is not the judge, asserted by object identity.</b> The test checks <code>economics.client is not hypothesis.client</code>, so a refactor cannot quietly collapse them into one conversation.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 05 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Stage S5</span><span class="sep"></span><span class="pageno">06 / 17</span></div>
+  <h1 class="stitle">Implementation: bounded formula search</h1>
+  <p class="stand">The thesis says "volume shock". It does not say whether the window is 5, 10 or 20 days. Only data can answer that, and that is exactly why it is dangerous.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">thesis + sign | 35 causal operators | 35-formula zoo for duplicate detection | feature panel</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>one promoted formula</b>, canonical AST, complexity, Tier-1 metrics, and up to 20 ledger rows</span>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">The inner loop</h2>
+        <p style="font-size:1.1cqw;margin:0 0 12px;line-height:1.4">Coder > AST and complexity > <b>free pre-filter</b> (compile check, AST-duplicate vs zoo and memory) > Tier-1 RankIC on VAL-A > Judge > refine or promote.</p>
+        <h2 class="lab">Three bindings</h2>
+        <ul class="pts num" style="font-size:1.06cqw">
+          <li><b>Hard cap of 20 variants per thesis</b>, enforced by the Planner</li>
+          <li><b>Every variant enters the trial ledger</b>, and near-identical ASTs are clustered so 20 tweaks are not 20 independent bets</li>
+          <li><b>Fresh-fold confirmation.</b> Search runs on Train + VAL-A. The winner is confirmed on VAL-B, which no variant ever touched, so this costs no holdout peek</li>
+        </ul>
+        <div class="panel accent" style="margin-top:12px">
+          <p>This turns "we do formula search" from a liability into a rigor point: <b>bounded, disclosed, deflated, and confirmed out of sample.</b></p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="figs" style="border-top:none">
+          <div class="fig"><div class="v">20</div><div class="l">Exact measured maximum with a Judge injected to say "refine" forever</div></div>
+          <div class="fig"><div class="v">0</div><div class="l">Trials charged by the pre-filter. Junk dies for free, before the Judge is paid</div></div>
+        </div>
+        <div class="panel">
+          <h2 class="lab" style="margin-bottom:6px">The operator library is the safety property</h2>
+          <table style="font-size:1.02cqw">
+            <tr><td style="width:34%"><b>35 operators</b></td><td>13 strictly trailing time-series, 5 cross-sectional, 17 element-wise</td></tr>
+            <tr><td><b>13 of 13</b></td><td>time-series operators covered by a causality test: perturb a future row, assert every earlier output is bit-identical</td></tr>
+            <tr><td><b>Parser rejects</b></td><td><code>__import__</code>, attribute access, subscripts, comprehensions, lambdas, f-strings</td></tr>
+            <tr><td><b>Zoo</b></td><td>25 Alpha101 + 10 classical, canonicalised and fingerprinted for duplicate detection</td></tr>
+          </table>
+        </div>
+        <div class="panel gold">
+          <p><b>No operator can reach forward.</b> Formula-level look-ahead is not policed here, it is <b>structurally impossible</b>. That is also why arbitrary Python factor evolution is excluded, not merely deferred.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 06 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Stage S6</span><span class="sep"></span><span class="pageno">07 / 17</span></div>
+  <h1 class="stitle">Backtester: one engine, eight call sites, no decisions</h1>
+  <p class="stand">The measuring instrument. It computes and returns a fixed dict. It never promotes, rejects or interprets.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">signal (long or wide) | split | horizon | extra lag | cost bps | neutralize | subsample</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>Metrics</b>: rank_ic, ic, icir, t_stat, sharpe, ann_return, turnover, mdd, n_days, n_obs, decay, sign</span>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">What it guarantees</h2>
+        <ul class="pts">
+          <li><b>Eight call sites, one engine</b>: Tier-1, Tier-2, holdout, stress, cost sweep, curriculum, portfolio, ablation</li>
+          <li><b>Purge and embargo</b> around every train and test boundary</li>
+          <li><b>HOLDOUT raises PermissionError</b> unless a ledger peek token is presented</li>
+          <li>A HOLDOUT-tail purge stops a VAL-B label reaching across the seal</li>
+          <li><b>Regime labels use expanding-window thresholds only</b>. A 2016 day cannot know 2024's volatility</li>
+          <li>No RNG. Two identical calls return bit-identical dicts, nested decay curve included</li>
+        </ul>
+        <div class="panel gold" style="margin-top:12px">
+          <p><b>A look-ahead we found in our own engine.</b> Regime labels originally used full-sample quantiles. Fixed at source, not patched in the test. A companion test confirms the broken version <b>would</b> have been detected, so the check is not vacuous.</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <h2 class="lab">Does the instrument work? Five calibration checks</h2>
+          <table>
+            <tr><th>Check</th><th class="n">Expected</th><th class="n">Measured</th></tr>
+            <tr><td>Random noise gives no signal</td><td class="n">|IC| &lt; 0.01</td><td class="n a">0.0023</td></tr>
+            <tr><td>Known planted signal recovered</td><td class="n">0.0400</td><td class="n a">0.0404</td></tr>
+            <tr><td>A label predicting itself</td><td class="n">&gt; 0.9</td><td class="n a">1.0000</td></tr>
+            <tr><td>...then given one extra day of lag</td><td class="n">collapse</td><td class="n k">-0.0052</td></tr>
+            <tr><td>Negating a signal negates its IC</td><td class="n">exact</td><td class="n a">bit-exact</td></tr>
+          </table>
+        </div>
+        <div class="figs">
+          <div class="fig"><div class="v">2.3 s</div><div class="l">Full backtest on the real panel, 581 symbols, 857 evaluation days</div></div>
+          <div class="fig"><div class="v k">-38.7</div><div class="l">Sharpe at 80 bps, from +4.14 at zero. Strictly decreasing in cost</div></div>
+        </div>
+        <div class="panel accent">
+          <p><b>Why this matters for the whole design.</b> Every gate downstream is arithmetic on this dict. If the instrument is wrong, the deflation, the PBO and the red team are all rigorous statements about a fiction.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 07 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Stage S7 / Gate B</span><span class="sep"></span><span class="pageno">08 / 17</span></div>
+  <h1 class="stitle">Gate B: is it new, and is it real?</h1>
+  <p class="stand">Deterministic thresholds only. The <b>order</b> of the four steps is load-bearing, not cosmetic.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">promoted formula | production factor book | the whole trial ledger | pre-registered sign</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>verdict + honesty audit</b>: marginal IC, DSR, t, PBO, effective N, peek id, what the peek scored</span>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">Four ordered steps</h2>
+        <ul class="pts num" style="font-size:1.06cqw">
+          <li><b>Orthogonalise</b> against the book, per day, cross-sectionally. Keep the residual</li>
+          <li><b>Novelty</b>: marginal IC of the residual. <b>Free</b>, so a clone dies here having spent nothing</li>
+          <li><b>Statistics</b>: Deflated Sharpe on the residual, t &gt; 3, PBO, deflated by the <b>run-wide effective</b> trial count</li>
+          <li><b>Rationed holdout peek</b>, also on the residual, so what was spent is auditable</li>
+        </ul>
+        <div style="margin-top:13px">
+          <h2 class="lab">Measured on our fixtures</h2>
+          <table>
+            <tr><td style="width:58%">Best of 200 pure-noise signals</td><td class="n">DSR 0.477</td><td class="n"><span class="pill no">reject</span></td></tr>
+            <tr><td>Planted signal found in 5 trials, t = 7.065</td><td class="n">DSR 0.9952</td><td class="n"><span class="pill ok">accept</span></td></tr>
+            <tr><td>20 formulas differing only by window length</td><td class="n">N 20 to 2.0</td><td class="n dim">clustered</td></tr>
+            <tr><td>PBO, 300 noise matrices</td><td class="n">0.4859</td><td class="n dim">is 0.5</td></tr>
+            <tr><td>PBO, one real signal among eleven</td><td class="n">0.0019</td><td class="n dim">is 0</td></tr>
+            <tr><td>Holdout peeks, then None forever</td><td class="n">12</td><td class="n dim">append-only</td></tr>
+            <tr><td>The peek scored the residual, not the raw</td><td class="n">0.01957</td><td class="n dim">raw 0.03200</td></tr>
+          </table>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel kill">
+          <h2 class="lab" style="margin-bottom:5px">Found in our own build</h2>
+          <p>We searched <b>40 pure-noise variants</b> across 40 different thesis IDs, then gated the winner under a fresh 41st thesis. Its raw t-statistic came out at</p>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:2cqw;font-weight:600;color:var(--kill);letter-spacing:-.02em;margin-top:7px">t = -3.000</p>
+          <p>Pure noise, clearing the celebrated t &gt; 3 bar exactly.</p>
+          <table style="font-size:1.0cqw;margin-top:8px">
+            <tr><td>Deflation scoped to the thesis</td><td class="n">N=1</td><td class="n">DSR 1.000</td><td class="n"><span class="pill no">accept</span></td></tr>
+            <tr><td><b>Deflation scoped run-wide</b></td><td class="n">N=41</td><td class="n">DSR 0.789</td><td class="n"><span class="pill ok">reject</span></td></tr>
+          </table>
+          <p style="margin-top:8px"><b>The deflator is only as honest as the counter behind it</b>, and every number the broken gate printed looked impeccable.</p>
+        </div>
+        <div class="panel accent">
+          <p><b>The ledger.</b> Append-only SQLite. There is no DELETE, DROP TABLE or TRUNCATE anywhere in the module, and a structural scan of the source asserts it.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 08 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Stage S8 / Gate C</span><span class="sep"></span><span class="pageno">09 / 17</span></div>
+  <h1 class="stitle">Gate C: try to kill it</h1>
+  <p class="stand">The agent chooses the attacks. Code runs them. Every test is a parameterised backtest, never LLM-written code.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">surviving formula | claimed horizon and regime | expanding-window regime labels | monthly liquidity ranks</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>survives or killed</b>, per-test result, flagged diagnostics, and <b>zero added trials</b></span>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div class="scroll">
+        <h2 class="lab">The fixed menu of eleven. Five are decisive and always run.</h2>
+        <table>
+          <tr><th style="width:3%">#</th><th style="width:26%">Test</th><th>Kill rule</th><th class="n">Kind</th></tr>
+          <tr><td class="n">1</td><td class="mono">subsample_year</td><td>drop the best year; RankIC collapses and loses significance</td><td class="n"><span class="pill no">decisive</span></td></tr>
+          <tr><td class="n">2</td><td class="mono">regime_split</td><td>RankIC at or below zero in bull or in bear</td><td class="n"><span class="pill no">decisive</span></td></tr>
+          <tr><td class="n">4</td><td class="mono">cost_sweep</td><td>net loss at 15 bps, or Sharpe halved to under 0.5</td><td class="n"><span class="pill no">decisive</span></td></tr>
+          <tr><td class="n">5</td><td class="mono">extra_lag</td><td>one more trading day of lag destroys it</td><td class="n"><span class="pill no">decisive</span></td></tr>
+          <tr><td class="n">10</td><td class="mono">sign_stability</td><td>modal sign holds in under 70 percent of folds</td><td class="n"><span class="pill no">decisive</span></td></tr>
+          <tr><td class="n">3</td><td class="mono">size_tercile</td><td>by trailing turnover, <b>not market cap</b>, which would leak</td><td class="n dim">diagnostic</td></tr>
+          <tr><td class="n">6</td><td class="mono">delivery_lag</td><td>shift only the one field with real timing ambiguity</td><td class="n dim">diagnostic</td></tr>
+          <tr><td class="n">7-9</td><td class="mono">sector_neutral, liquidity_filter, decay_curve</td><td>is it a sector bet, does it survive above the 40th turnover percentile, does the edge live at the claimed horizon</td><td class="n dim">diagnostic</td></tr>
+          <tr><td class="n">11</td><td class="mono">universe_edge</td><td>drop the names ranked 150 to 200 by liquidity that month</td><td class="n dim">diagnostic</td></tr>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel accent">
+          <h2 class="lab" style="margin-bottom:5px">Innovation: rejection-only, and we count it</h2>
+          <p>A filter that can kill but never promote <b>cannot inflate the false-discovery rate</b>, so it needs no deflation. That is the answer to "does your red team running eleven backtests blow up your trial count?"</p>
+          <p><b>Measured:</b> a full run made <b>25 backtests</b>, wrote <b>25 ledger rows</b>, every one with <code>counts_as_trial = 0</code>. Afterwards <code>ledger.n_trials() == 0</code>.</p>
+        </div>
+        <div>
+          <h2 class="lab">What it actually kills</h2>
+          <table>
+            <tr><th>Planted pathology</th><th class="n">before</th><th class="n">after</th></tr>
+            <tr><td>Leakage: a signal that is its own label</td><td class="n">1.0000</td><td class="n k">0.0018</td></tr>
+            <tr><td>One lucky year, noise elsewhere</td><td class="n">-</td><td class="n k">0.0019</td></tr>
+            <tr><td>High turnover, thin gross edge (Sharpe)</td><td class="n">0.415</td><td class="n k">-7.97</td></tr>
+            <tr><td>A sign that flips between years</td><td class="n">-</td><td class="n k">0.60</td></tr>
+            <tr><td><b>A clean AR(1) signal</b> (RankIC)</td><td class="n">0.0357</td><td class="n a">11 of 11</td></tr>
+          </table>
+        </div>
+        <div class="panel">
+          <p><b>The last row matters as much as the others.</b> A red team that kills everything is not a filter, it is a wall.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 09 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Stage S9</span><span class="sep"></span><span class="pageno">10 / 17</span></div>
+  <h1 class="stitle">Memory and Reflection: learn from the corpse</h1>
+  <p class="stand">Rejected cards are the majority of the output, so they are the majority of the learning signal.</p>
+  <div class="body">
+    <div class="io">
+      <span class="tag">IN</span>
+      <span class="v">the card, <b>accepted or rejected</b> | verdict and reason | metrics | red-team result</span>
+      <span class="tag o">OUT</span>
+      <span class="v"><b>lesson as an edit motif</b>, bandit prior update, lineage row, ledger row, revised prompts</span>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0">
+      <div>
+        <h2 class="lab">Six stores</h2>
+        <table style="font-size:1.02cqw">
+          <tr><td style="width:36%"><b>Formula index</b></td><td>exact hash plus fingerprint bucket</td></tr>
+          <tr><td><b>Lesson store</b></td><td>edit motifs. Physically a separate file from the exact stores</td></tr>
+          <tr><td><b>Bandit state</b></td><td>10 families, pulls and rewards</td></tr>
+          <tr><td><b>Card store</b></td><td>human-readable JSON, plus a queryable index</td></tr>
+          <tr><td><b>Lineage tree</b></td><td>parent pointers, walkable root to leaf</td></tr>
+          <tr><td><b>Accepted book</b></td><td>the panel Gate B orthogonalises against</td></tr>
+        </table>
+        <div class="panel accent" style="margin-top:12px">
+          <h2 class="lab" style="margin-bottom:5px">Innovation: motifs, not outputs</h2>
+          <p>Memory stores <b>which change helped, under which parent context</b> - "shortening the window helped, in momentum" - rather than storing finished formulas. A finished formula teaches you one answer. A motif teaches you a move.</p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <h2 class="lab">Guards, so memory cannot become superstition</h2>
+          <table>
+            <tr><td style="width:34%"><b>Confidence gate</b></td><td>A motif seen <b>once is not a prior</b>. At three observations it is.</td></tr>
+            <tr><td><b>Asymmetric veto</b></td><td>Dead in momentum, still live in reversal. <b>Context-scoped and sticky.</b></td></tr>
+            <tr><td><b>Exploration floor</b></td><td>Five percent, so a bad run cannot permanently close a family.</td></tr>
+            <tr><td><b>Curriculum</b></td><td>Rotates a mandatory adversarial regime every N generations.</td></tr>
+            <tr><td><b>Meta-check</b></td><td>If rolling holdout FDR rises, <b>gate thresholds auto-tighten.</b></td></tr>
+          </table>
+        </div>
+        <div class="figs">
+          <div class="fig"><div class="v">1 -&gt; 0</div><div class="l">Priors returned at one observation. At three, one prior is returned.</div></div>
+          <div class="fig"><div class="v">3.0 up</div><div class="l">t-stat bar when FDR hits 0.9. At FDR 0.0 it stays exactly 3.0.</div></div>
+        </div>
+        <div class="panel">
+          <p><b>Budget safety.</b> The LLM call happens first, so exhausting the token budget raises <b>before</b> anything is written. Measured: memory and bandit are left completely untouched.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 10 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">The core argument</span><span class="sep"></span><span class="pageno">11 / 17</span></div>
+  <h1 class="stitle">Five failure modes, five mechanisms, and what each does not catch</h1>
+  <p class="stand">The design's real content is knowing which mechanism catches which failure, <b>and which one it sails straight past.</b></p>
+  <div class="body">
+    <div class="scroll">
+      <table class="matrix">
+        <tr><th>Failure mode</th><th>Caught by</th><th>Does NOT catch it</th></tr>
+        <tr>
+          <td>Look-ahead and leakage</td>
+          <td>Causal operator library (structural), timing contract, purge and embargo, extra-lag test, delivery shift</td>
+          <td><b>Deflated Sharpe and PBO.</b> A deliberately leaky oracle at Sharpe 35 survives both. Gen&ccedil;ay, arXiv 2608.27734</td>
+        </tr>
+        <tr>
+          <td>Selection and multiple testing</td>
+          <td>Deflated Sharpe vs the effective trial count, PBO, variant cap, fresh fold, rationed holdout</td>
+          <td><b>Any amount of economic reasoning.</b> A beautiful story does not reduce your trial count</td>
+        </tr>
+        <tr>
+          <td>Story-fitting<br><span class="dim" style="font-weight:400">right answer, wrong reason</span></td>
+          <td><b>Pre-registered sign</b>, counterparty rubric, author is not the judge</td>
+          <td><b>IC, Sharpe and DSR all pass happily.</b> A signal with the wrong sign for its own story is statistically excellent</td>
+        </tr>
+        <tr>
+          <td>Redundancy and crowding</td>
+          <td>AST duplicate check in S5, then marginal IC against the production book in Gate B</td>
+          <td><b>All of the above.</b> A perfect clone of an incumbent factor passes every statistical and economic test there is</td>
+        </tr>
+        <tr>
+          <td>Regime and cost fragility</td>
+          <td>Red-Team fixed menu: regime split, cost sweep, size tercile, liquidity filter, universe edge</td>
+          <td><b>Everything measured in-sample.</b> A full-period RankIC averages a bull and a bear into a number describing neither</td>
+        </tr>
+        <tr>
+          <td class="k">Broken data source</td>
+          <td class="k">External reconciliation only. <span style="font-weight:400;color:var(--fg)">We found one. Slide 13.</span></td>
+          <td class="k"><b>Every mechanism in this table.</b> It contaminates the universe, not any one factor. Nothing throws an exception</td>
+        </tr>
+      </table>
+    </div>
+    <div class="grid g2" style="margin-top:auto;padding-top:11px">
+      <div class="panel accent">
+        <p><b>Formula-level look-ahead is structurally impossible.</b> Every operator is trailing-window or same-day cross-sectional. No operator can reach forward, and all 13 time-series operators carry a causality test that proves it.</p>
+      </div>
+      <div class="panel kill">
+        <p><b>Statistical gates catch over-searching. They do not catch cheating.</b> Different failures, different machinery. Deflating a leaky signal by its trial count gives you a rigorous number about a fiction.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 11 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">The core argument</span><span class="sep"></span><span class="pageno">12 / 17</span></div>
+  <h1 class="stitle">Three budgets, and the conflict between the first and the third</h1>
+  <p class="stand">The prompt names the token budget. It is real, but it is not the scarce resource that decides whether a discovery is true.</p>
+  <div class="body">
+    <div class="scroll">
+      <table>
+        <tr><th style="width:20%">Budget</th><th style="width:22%">Spent by</th><th style="width:24%">Is a backtest expensive here?</th><th>How we economise</th></tr>
+        <tr>
+          <td><b>1. LLM tokens</b></td>
+          <td>Hypothesis, Coder, Judge, Red-Team, Reflection</td>
+          <td><b>No.</b> A backtest is a Python call returning a small dict. Near zero tokens</td>
+          <td>Bandit funds productive families. The free pre-filter kills junk before we pay a Judge</td>
+        </tr>
+        <tr>
+          <td><b>2. Compute</b></td>
+          <td>Running backtests</td>
+          <td>Barely. The Tier-2 CSCV battery is modestly heavier</td>
+          <td>Heavy CSCV only on finalists</td>
+        </tr>
+        <tr style="background:var(--accent-soft)">
+          <td><b>3. Statistical integrity</b></td>
+          <td>Every <b>selecting</b> backtest is one trial. Every holdout peek is irreplaceable</td>
+          <td><b>Yes, invisibly.</b> Nothing gets slower, nothing errors. The bar for everything else just rises</td>
+          <td>Variant cap, append-only ledger, Deflated Sharpe, 12 peeks ever</td>
+        </tr>
+      </table>
+    </div>
+    <div class="grid g2" style="flex:1;min-height:0;margin-top:4px">
+      <div class="panel kill" style="display:flex;flex-direction:column;justify-content:center">
+        <h2 class="lab" style="margin-bottom:6px">The conflict. We have not found this stated anywhere.</h2>
+        <p style="font-size:1.08cqw">Budgets <b>1 and 3 pull in opposite directions.</b> Token efficiency rewards finding the best candidate in <b>fewer</b> evaluations. Statistical integrity punishes you for <b>every</b> evaluation made along the way.</p>
+        <p style="font-size:1.08cqw"><b>Any technique that makes search more sample-efficient at maximising a noisy objective is, by the same token, more efficient at overfitting.</b></p>
+        <p style="font-size:1.08cqw">This is why MCTS is on our roadmap rather than in our loop.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <h2 class="lab">Evidence for budget 3: search N worthless candidates, take the best</h2>
+          <table>
+            <tr><th>variants N</th><th class="n">sqrt(2 ln N)</th><th class="n">realised best t</th><th class="n">P(best t &gt; 3)</th></tr>
+            <tr><td class="mono">20 <span class="a">our cap</span></td><td class="n">2.45</td><td class="n">1.87</td><td class="n a">2.6%</td></tr>
+            <tr><td class="mono">200</td><td class="n">3.26</td><td class="n">2.75</td><td class="n w">23.7%</td></tr>
+            <tr><td class="mono">500</td><td class="n">3.53</td><td class="n">3.04</td><td class="n k">49.2%</td></tr>
+          </table>
+          <p class="dim" style="font-size:.89cqw;margin-top:6px;line-height:1.35">200,000 Monte-Carlo searches per row, seed 42. At 500 variants a pure-noise search clears the t &gt; 3 bar <b>half the time</b>, so the bar carries no information at all.</p>
+        </div>
+        <div class="panel accent">
+          <p><b>The flip side is our best argument.</b> Theory-first, LLM-guided search tries fewer and smarter candidates than brute-force mining. Fewer trials, smaller deflation penalty, more believable survivors. <b>The economic thesis is what buys the statistics their power.</b></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 12 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Bad examples</span><span class="sep"></span><span class="pageno">13 / 17</span></div>
+  <h1 class="stitle">Three ways to be wrong: data, statistics, economics</h1>
+  <p class="stand">Told in three beats each. The first is not a demonstration. It happened to us, on the data we were handed.</p>
+  <div class="body">
+    <div class="grid g3" style="flex:1;min-height:0">
+
+      <div style="display:flex;flex-direction:column">
+        <div class="colhead r">
+          <div class="n">1. DATA INTEGRITY. REAL.</div>
+          <div class="t">The universe source was structurally broken</div>
+        </div>
+        <div class="beats">
+          <div class="beat"><span class="tg">Naive</span><span>The supplied constituent file passes every superficial check: 37 snapshots, <b>exactly 200 names in each</b>, dead companies retained, inclusion and exclusion events tracked.</span></div>
+          <div class="beat"><span class="tg">Caught by</span><span><b>External reconciliation against NSE, not by any gate.</b><br><b class="k">42 stocks</b> that were already trading in 2015 and sit in today's most-liquid 200 <b>never appear in any snapshot</b>: RELIANCE, TCS, SBIN, ONGC, MARUTI, TATASTEEL, COALINDIA, POWERGRID, SUNPHARMA, TITAN.<br><b class="k">100 of 315</b> names carry zero events. The signature of a change-log replayed onto an incomplete seed, then padded back to 200 with mid-caps.</span></div>
+          <div class="beat"><span class="tg">Why it lands</span><span>The missing names are <b>systematically the largest and most liquid in India</b>. Every liquidity, size and capacity feature would have been computed on a sample with its top end sawn off. <b>DSR, PBO, purge and the lag test all pass it silently.</b></span></div>
+          <div class="beat"><span class="tg">Fix</span><span><b>Abandon constituent data entirely.</b> Rebuild from daily bhavcopy as the top 200 by trailing turnover: point-in-time and survivorship-free by construction. Coverage slope <b>2.6e-17</b> per day, and it recovers all six heavyweights on <b>100 percent</b> of days.</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column">
+        <div class="colhead">
+          <div class="n">2. STATISTICAL</div>
+          <div class="t">Look-ahead leakage</div>
+        </div>
+        <div class="beats">
+          <div class="beat"><span class="tg">Naive</span><span>A factor that lets same-day or forward information into the return window posts a spectacular Tier-1 RankIC. A signal that is quietly its own label scores <b>1.0000</b>.</span></div>
+          <div class="beat"><span class="tg">Caught by</span><span><b>Structure, three times over.</b> The causal operator library makes it inexpressible. The panel self-test detects it and shows it collapsing to <b>-0.060</b> one day later. Red-team test 5 destroys it: <b>1.0000 to 0.0018</b> on one extra day of lag.</span></div>
+          <div class="beat"><span class="tg">Teaching point</span><span><b>The Deflated Sharpe would have passed it.</b> Gen&ccedil;ay's leaky oracle posts Sharpe 35 and survives DSR and PBO completely. Statistical gates catch over-searching. They do not catch cheating.</span></div>
+          <div class="beat"><span class="tg">Fix</span><span>Close the surface rather than measure it. Causal operators only, an explicit timing contract, purge and embargo, and a lag test that can kill on its own. It is also why arbitrary-Python factor evolution stays out of scope.</span></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column">
+        <div class="colhead">
+          <div class="n">3. ECONOMIC</div>
+          <div class="t">Right answer, wrong reason</div>
+        </div>
+        <div class="beats">
+          <div class="beat"><span class="tg">Naive</span><span>A data-mined signal posts a respectable IC and passes every statistical gate, but its realised sign is the <b>opposite</b> of what its own thesis predicted. The story said crowded stocks underperform. The money was on the other side.</span></div>
+          <div class="beat"><span class="tg">Caught by</span><span><b>The pre-registered sign.</b> The thesis is hashed and timestamped before any data is touched, and a test asserts the hash lands at a strictly earlier event index than the first backtest.</span></div>
+          <div class="beat"><span class="tg">Verdict</span><span>Rejected as a <b>thesis failure, not a discovery</b>, and the sign is <b>never flipped to rescue it</b>. That is the tempting move, and refusing it is the whole point. Costs <b>zero holdout peeks</b>.</span></div>
+          <div class="beat"><span class="tg">Teaching point</span><span><b>No purely statistical gate would ever flag this.</b> IC, Sharpe, DSR, PBO and the red team all pass it. It is the one failure mode where the economics <b>is</b> the test.</span></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="note"><b>Status.</b> Example 1 is a real finding on real supplied data, reproducible from the CSV in the repo. Examples 2 and 3 are demonstrated at component level with the measured values shown. The full loop run that emits them as finished rejected Alpha Cards has <b>not been run yet</b>. See slide 16.</div>
+  </div>
+</section>
+
+<!-- =============================================================== 13 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Evaluation</span><span class="sep"></span><span class="pageno">14 / 17</span></div>
+  <h1 class="stitle">Grading the factory, not the signal</h1>
+  <p class="stand">Grading one signal is the Alpha Card. Grading the factory asks entirely different questions.</p>
+  <div class="body">
+    <div class="grid g2" style="flex:1;min-height:0">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <h2 class="lab">Five dimensions</h2>
+          <table>
+            <tr><td style="width:27%"><b>Yield</b></td><td>hypotheses per accepted card, <b>tokens per accepted alpha</b>, marginal IC added per generation, diversity</td></tr>
+            <tr><td><b>Honesty</b></td><td><b>FDR</b> = accepted but fails holdout, over accepted. DSR distribution. Sign agreement rate</td></tr>
+            <tr><td><b>Efficiency</b></td><td>real alpha per token. The headline objective</td></tr>
+            <tr><td><b>Gate value</b></td><td>the ablation: catch rate, false-kill rate, FDR with the gate on and off</td></tr>
+            <tr><td><b>Real learning</b></td><td>error <b>volume</b> trend, not error type</td></tr>
+          </table>
+        </div>
+        <div class="panel gold">
+          <h2 class="lab" style="margin-bottom:5px">Detecting fake learning</h2>
+          <p>Factor-mining agents can look like they are learning while only their <b>mistakes</b> mature: conceptual, then operational, then strategic, with total error volume barely moving.</p>
+          <p>So we track <b>rejections per generation</b> and per-gate pass rate, not the changing character of failures. Falling volume is improvement. Same volume in new clothes is drift. <b>We will report which one we see, including if it is the unflattering answer.</b></p>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel accent">
+          <h2 class="lab" style="margin-bottom:5px">The ablation: designed and specified <span class="pill pend">not yet run</span></h2>
+          <p>Seed a pool of about 40 factors with <b>documented ground truth</b>: 10 genuinely predictive, 10 pure noise, 10 deliberately overfit, 10 deliberately leaky. Run the pool with each gate <b>enabled, then disabled.</b></p>
+          <p>Report per gate: <b>catch rate</b>, <b>false-kill rate</b>, and headline <b>FDR on versus off</b>.</p>
+          <p>This makes complexity <b>self-justifying rather than asserted</b>. We did not add gates because papers have them. We measured what each one catches. The corollary is the real argument for pruning: <b>we can only make that argument for gates we actually ablated.</b></p>
+        </div>
+        <div class="panel kill">
+          <h2 class="lab" style="margin-bottom:5px">What we cannot yet show, and will not pretend to</h2>
+          <ul class="pts" style="font-size:1.03cqw;gap:4px">
+            <li><b>No accepted Alpha Card exists.</b> The full accept path is exercised end to end on a fixture, but not on a real thesis</li>
+            <li><b>No ablation numbers.</b> Designed above, none measured. There are no placeholder figures anywhere in this deck</li>
+            <li><b>No fake-learning plot.</b> It needs multi-generation run data that does not exist yet</li>
+            <li>Small samples will make these numbers <b>illustrative, not conclusive</b>, and we will label them that way</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 14 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Positioning</span><span class="sep"></span><span class="pageno">15 / 17</span></div>
+  <h1 class="stitle">Honest novelty: two claims conceded, two that survive</h1>
+  <p class="stand">Two of our four original headline claims were already published. Conceding them with citations is a stronger position than a bluff.</p>
+  <div class="body">
+    <div class="scroll">
+      <table>
+        <tr><th style="width:22%">Claim</th><th style="width:14%">Status</th><th>Position</th></tr>
+        <tr>
+          <td><b>Pre-registered sign and counterparty gate</b></td>
+          <td><span class="pill ok">genuinely novel</span></td>
+          <td><b>Our lead claim.</b> AlphaAgent does post-hoc semantic alignment. AgonAlpha's reviewer audits sign logic after evaluation. Nothing found <b>commits a direction before evaluation and rejects on mismatch.</b> A post-hoc check can be talked around. A hashed commitment cannot.</td>
+        </tr>
+        <tr>
+          <td><b>Three budgets, and their conflict</b></td>
+          <td><span class="pill ok">novel</span></td>
+          <td>Token efficiency and statistical integrity pull in opposite directions. Not found stated anywhere, and it produces a falsifiable consequence: MCTS goes on the roadmap, not in the loop.</td>
+        </tr>
+        <tr>
+          <td><b>Fixed-menu, rejection-only red team</b></td>
+          <td><span class="pill pend">differentiated</span></td>
+          <td>Adversarial review already exists in AgonAlpha and FactorMAD. Ours is a <b>fixed, parameterised menu</b>, so no arbitrary code runs and every attack reproduces, and it is <b>provably rejection-only</b>, so it cannot inflate the trial count.</td>
+        </tr>
+        <tr>
+          <td><b>Statistical-rigor gates wired into fitness</b></td>
+          <td><span class="pill no">anticipated</span></td>
+          <td><b>Not novel. Conceded.</b> Gen&ccedil;ay, <a href="https://arxiv.org/abs/2608.27734" class="mono">arXiv 2608.27734</a>, got there first. We cite it and lead instead with <b>what DSR does not catch</b>: their leaky oracle posts Sharpe 35 and survives DSR and PBO completely. Statistical gates are table stakes now. <b>Knowing their blind spot is the contribution.</b></td>
+        </tr>
+      </table>
+    </div>
+    <div class="grid g2" style="flex:1;min-height:0;margin-top:6px">
+      <div class="panel kill">
+        <h2 class="lab" style="margin-bottom:5px">Limitations, stated before you find them</h2>
+        <ul class="pts" style="font-size:1.02cqw;gap:4px">
+          <li><b>No accepted card and no ablation numbers yet.</b> The two deliverables that need a full loop run</li>
+          <li><b>One market, one universe, prototype scale.</b> No evidence about production breadth</li>
+          <li><b>No point-in-time fundamentals</b>, so whole feature families are unavailable. A rigor choice that costs coverage</li>
+          <li><b>CSCV applies a light purge, not a full embargo.</b> Strategies are not refit inside splits, so leakage is limited to label overlap at block seams</li>
+          <li><b>The LLM tier is a free-tier model chain</b>, not a frontier model. The architecture is model-agnostic. Thesis quality is not</li>
+        </ul>
+      </div>
+      <div class="panel accent">
+        <h2 class="lab" style="margin-bottom:5px">Roadmap, and the precondition for each</h2>
+        <table style="font-size:1.0cqw">
+          <tr><th>Extension</th><th>Precondition</th></tr>
+          <tr><td><b>LLM-guided MCTS formula search</b></td><td>Trial accounting validated first. MCTS's adaptive draws make effective independent trials hard to define</td></tr>
+          <tr><td><b>Code-based factor evolution</b></td><td>A causal-operator sandbox. Arbitrary Python reopens the look-ahead surface we closed</td></tr>
+          <tr><td><b>Point-in-time fundamentals</b></td><td>Vendor access. This is where a per-field availability registry finally earns its keep</td></tr>
+          <tr><td><b>Full evolutionary run, live-forward test</b></td><td>Time</td></tr>
+        </table>
+        <p style="margin-top:8px"><b>Get the meter working before attaching the multiplier.</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 15 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">Build state</span><span class="sep"></span><span class="pageno">16 / 17</span></div>
+  <h1 class="stitle">What exists, and a dashboard to interrogate it</h1>
+  <p class="stand">Every phase was human-verified before the next began, against a report requiring a <b>measured value for every criterion</b>.</p>
+  <div class="body">
+    <div class="figs">
+      <div class="fig"><div class="v a">315</div><div class="l">tests passing, plain pytest, no network, 12m53s</div></div>
+      <div class="fig"><div class="v">11,147</div><div class="l">lines across 16 source modules</div></div>
+      <div class="fig"><div class="v">10 / 13</div><div class="l">system phases built and signed off</div></div>
+      <div class="fig"><div class="v">14</div><div class="l">dashboard pages, one per subsystem</div></div>
+    </div>
+    <div class="grid g6-5" style="flex:1;min-height:0;margin-top:2px">
+      <div class="scroll">
+        <table>
+          <tr><th style="width:26%">Module</th><th>What it is</th><th class="n" style="width:13%">State</th></tr>
+          <tr><td class="mono">universe, prices, panel</td><td>Liquidity-defined universe, ISIN-keyed NSE price build with our own corporate-action adjustment, 539k-row feature panel</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">backtester</td><td>One engine, eight call sites, purge and embargo, holdout lock, expanding regime labels, bit-identical repeats</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">operators, ast_tools, zoo</td><td>35 causal operators, whitelist parser, canonicalisation and fingerprinting, 35-formula zoo</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">gates, ledger</td><td>Deflated Sharpe, effective trial count, PBO via CSCV, walk-forward, ordered Gate B, append-only ledger with a 12-peek ration</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">memory</td><td>Six stores. Exact and semantic stores are physically separate files</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">agents</td><td>Eight agents on one call path: model probe with fallback chains, throttle, budget, prefix caching, schema repair, offline mock mode</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">redteam</td><td>11 falsification tests, 5 decisive, all recorded as non-trials</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">loop</td><td>17-node orchestration graph, stdlib-only SQLite checkpointer, resume reproduces an identical state digest</td><td class="n"><span class="pill ok">verified</span></td></tr>
+          <tr><td class="mono">demo run, evaluation</td><td>The accepted card, the bad examples as finished cards, and the gate ablation</td><td class="n"><span class="pill pend">pending</span></td></tr>
+        </table>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="panel accent">
+          <h2 class="lab" style="margin-bottom:5px">The dashboard</h2>
+          <p style="font-family:'IBM Plex Mono',monospace;font-size:1.0cqw">streamlit run dashboard/Home.py</p>
+          <p style="margin-top:7px"><b>Two jobs.</b> Explain the machine, with flowcharts and prose. Then let a reviewer poke at the evidence: the survivorship-free universe, the coverage plot with its fitted slope, the panel, the trial ledger, the red team, the cards.</p>
+          <p><b>Where it matters it computes live</b> rather than showing a picture. Run a backtest, run the red team, compute a Deflated Sharpe against a trial count you choose.</p>
+          <p>Read-only over the project's data. No LLM call, and <b>no network on any page load.</b></p>
+        </div>
+        <div class="panel">
+          <p><b>Why the verification protocol is on a slide.</b> This system exists to catch self-deception in signals, so the same discipline has to apply to the build. <b>A survivorship-biased panel does not throw an exception. It just makes every later result too good.</b> The t = -3.000 noise winner and the full-sample regime labels both surfaced this way, in code whose own tests were already green.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =============================================================== 16 ==== -->
+<section class="slide">
+  <div class="rail"><span class="eyebrow">References</span><span class="sep"></span><span class="pageno">17 / 17</span></div>
+  <h1 class="stitle">What we took from each paper</h1>
+  <p class="stand">Every entry re-verified against arXiv or the ACM DL, September 2026. <b class="a">Bold</b> marks what this system actually adopted or rejected.</p>
+  <div class="body">
+    <div class="grid g2" style="flex:1;min-height:0;gap:0 26px">
+      <div>
+        <div class="refhead">Agentic alpha mining</div>
+        <div class="ref"><div class="t">AlphaAgent: LLM-Driven Alpha Mining with Regularized Exploration to Counteract Alpha Decay. Tang, Chen, Yang, Mai, Zheng, Wang, Chen, Lin. <a href="https://arxiv.org/abs/2502.16789" class="mono">arXiv 2502.16789</a></div><div class="u"><b>Adopted:</b> the idea to factor to evaluation spine, <b>AST-based originality</b>, AST complexity control. <b>Differ:</b> their hypothesis-factor alignment is post-hoc; ours is a sign committed before evaluation.</div></div>
+        <div class="ref"><div class="t">R&amp;D-Agent-Quant: A Multi-Agent Framework for Data-Centric Factors and Model Joint Optimization. Li, Yang, Yang, Xu, Wang, Liu, Bian. NeurIPS 2025. <a href="https://arxiv.org/abs/2505.15155" class="mono">arXiv 2505.15155</a></div><div class="u"><b>Adopted:</b> the research, development, feedback loop, and the <b>multi-armed-bandit scheduler</b> that allocates budget across idea-families. That is our S1.</div></div>
+        <div class="ref"><div class="t">AgonAlpha: Autonomous Alpha Discovery via Prompt Economy and Scalable Agentic Search. Ye, Sun, Ren, Yu, Yi, Yang. <a href="https://arxiv.org/abs/2608.11250" class="mono">arXiv 2608.11250</a></div><div class="u"><b>Conceded to:</b> the fresh-context adversarial reviewer with veto. Our Gate A separation is the same pattern. <b>Contrast:</b> it uses no DSR, PBO or purge and embargo, which is the gap Gate B fills.</div></div>
+        <div class="ref"><div class="t">AlphaMemo: Structured Search-Process Memory for Self-Evolving Alpha Mining Agents. Yu, Zheng, Pan, Liu, Wang, He. <a href="https://arxiv.org/abs/2606.20625" class="mono">arXiv 2606.20625</a></div><div class="u"><b>Adopted:</b> memory as <b>AST-diff edit motifs</b>, which change helped in which parent context, rather than final outputs. Plus confidence-gated retrieval and the asymmetric veto.</div></div>
+        <div class="ref"><div class="t">FactorMAD: A Multi-Agent Debate Framework Based on LLMs for Interpretable Stock Alpha Factor Mining. Duan, Zhang, Li. ICAIF 2025. <a href="https://dl.acm.org/doi/10.1145/3768292.3770377" class="mono">doi 10.1145/3768292.3770377</a></div><div class="u"><b>Adopted:</b> adversarial multi-agent critique as a quality mechanism. <b>Rejected:</b> its code-based factor pipeline. Arbitrary Python reopens the look-ahead surface.</div></div>
+        <div class="ref"><div class="t">QuantAgent: Seeking Holy Grail in Trading by Self-Improving LLM. <a href="https://arxiv.org/abs/2402.03755" class="mono">arXiv 2402.03755</a> / AlphaGen: Synergistic Formulaic Alpha Collections via RL. <a href="https://arxiv.org/abs/2306.12964" class="mono">arXiv 2306.12964</a></div><div class="u"><b>Adopted:</b> the inner writer-judge loop inside an outer knowledge-base loop, which is our S5 plus S9; and the synergistic-collection framing behind the off-loop portfolio step.</div></div>
+      </div>
+      <div>
+        <div class="refhead">Statistical rigor and honest evaluation</div>
+        <div class="ref"><div class="t">What survives honest evaluation? Leakage-safe, search-aware assessment of LLM-driven trading strategy discovery. Eray Gen&ccedil;ay. <a href="https://arxiv.org/abs/2608.27734" class="mono">arXiv 2608.27734</a></div><div class="u"><b>Conceded to</b> on wiring statistical rigor into fitness. <b>Adopted:</b> its central result, <b>a deliberately leaky oracle at Sharpe 35 survives DSR and PBO</b>. That is the top row of our failure-mode matrix.</div></div>
+        <div class="ref"><div class="t">The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting and Non-Normality. Bailey, Lopez de Prado. <a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2460551" class="mono">SSRN 2460551</a></div><div class="u"><b>Adopted:</b> the expected-maximum-Sharpe deflator, skew and non-excess kurtosis, and the insistence that the trial count is part of the result. Ours is checked against a Monte-Carlo order statistic to 0.033.</div></div>
+        <div class="ref"><div class="t">Harvey, Liu and Zhu. "...and the Cross-Section of Expected Returns". Review of Financial Studies, 2016</div><div class="u"><b>Adopted:</b> the <b>t &gt; 3</b> hurdle, and the factor-zoo framing that makes marginal IC against an incumbent book the right novelty test.</div></div>
+        <div class="ref"><div class="t">Lopez de Prado. Advances in Financial Machine Learning</div><div class="u"><b>Adopted:</b> CSCV into PBO, purging and embargo, and the discipline that backtesting is a final confirmation rather than a research tool. That is why VAL-B is touched once.</div></div>
+        <div class="ref"><div class="t">The Alpha Factory Illusion. LLMQuant</div><div class="u"><b>Adopted:</b> the fake-learning test. Track error <b>volume</b> per generation, not the maturing character of errors, because sophistication is not improvement.</div></div>
+        <div class="ref"><div class="t">ValueBlindBench: Agreement-Gated Stress Testing of LLM-Judged Investment Rationales. <a href="https://arxiv.org/abs/2604.25224" class="mono">arXiv 2604.25224</a></div><div class="u"><b>Adopted:</b> the requirement to validate that an LLM judge is not rubber-stamping. Hence the author-is-not-judge object-identity assertion and Gate A's structural pre-check.</div></div>
+        <div class="refhead">Operators, search and data</div>
+        <div class="ref"><div class="t">101 Formulaic Alphas. Zura Kakushadze. <a href="https://arxiv.org/abs/1601.00991" class="mono">arXiv 1601.00991</a>. Wilmott 2016(84):72-80</div><div class="u"><b>Adopted:</b> the operator vocabulary and 25 of the 35 zoo formulas. <b>Disclosed:</b> Alpha 56 is skipped, since it needs true market capitalisation and our size proxy is trailing turnover.</div></div>
+        <div class="ref"><div class="t">Alpha Jungle: An LLM-Powered MCTS Framework for Formulaic Factor Mining. Shi, Duan, Li. <a href="https://arxiv.org/abs/2505.11122" class="mono">arXiv 2505.11122</a> / CogAlpha: Cognitive Alpha Mining via LLM-Driven Code-Based Evolution. Liu et al. <a href="https://arxiv.org/abs/2511.18850" class="mono">arXiv 2511.18850</a></div><div class="u"><b>On the roadmap, deliberately not in the loop.</b> Both make search more sample-efficient at maximising a noisy objective, which is the budget 1 versus budget 3 conflict on slide 12.</div></div>
+        <div class="ref"><div class="t">Data: NSE daily bhavcopy, NSE corporate-action feed, NSE total-market industry list. yfinance used only as an independent cross-check</div><div class="u"><b>No paid data source and no paid API anywhere in the build.</b> Raw downloads are cached verbatim and never modified in place.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>
+
+<div class="chrome">
+  <button type="button" id="prev" aria-label="Previous slide">Prev</button>
+  <span id="counter" aria-live="polite">01 / 18</span>
+  <button type="button" id="next" aria-label="Next slide">Next</button>
+</div>
+
+<script>
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var counter = document.getElementById('counter');
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function current(){
+    var best = 0, bestD = Infinity;
+    for (var i = 0; i < slides.length; i++){
+      var d = Math.abs(slides[i].getBoundingClientRect().top);
+      if (d < bestD){ bestD = d; best = i; }
+    }
+    return best;
+  }
+  function paint(){ counter.textContent = pad(current() + 1) + ' / ' + pad(slides.length); }
+  function go(delta){
+    var i = Math.min(slides.length - 1, Math.max(0, current() + delta));
+    slides[i].scrollIntoView({block:'start'});
+  }
+  document.getElementById('prev').addEventListener('click', function(){ go(-1); });
+  document.getElementById('next').addEventListener('click', function(){ go(1); });
+  document.addEventListener('keydown', function(e){
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); go(-1); }
+  });
+  window.addEventListener('scroll', paint, {passive:true});
+  paint();
+})();
+</script>
