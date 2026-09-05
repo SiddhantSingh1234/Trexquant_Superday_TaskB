@@ -20,6 +20,9 @@ data/universe/*.parquet
 data/panel/*.parquet
 data/ledger.db
 
+# Regenerated dashboard cache (rebuild: python dashboard/build_cache.py)
+data/dashboard/
+
 # Keep the small text artifacts even though their dirs have ignores above
 !data/universe/symbols.json
 !data/panel/splits.json

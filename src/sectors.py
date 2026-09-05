@@ -5,7 +5,7 @@
 The names that file cannot contain — delisted / renamed companies — are
 hand-classified below into NSE's **22 official industry names, used verbatim**.
 
-⚠️ Disclosure (also in the P3 report): this classification is **current, not
+Disclosure (also in the P3 report): this classification is **current, not
 point-in-time**. A company reclassified since 2015 carries today's label
 throughout its history. Acceptable because `sector` drives only *optional*
 sector-neutralization and red-team test 7 — never a scored feature on its own.
