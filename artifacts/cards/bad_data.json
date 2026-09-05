@@ -1,0 +1,107 @@
+{
+  "card_id": "bad_data",
+  "thesis_id": "th_bad_data",
+  "generation": 0,
+  "thesis": {
+    "mechanism": "Liquidity/low-volatility characteristics rank consistently for stocks that have genuinely been in the low-vol tail; the problem is not the factor, it is which 200-symbol universe it is ranked WITHIN.",
+    "counterparty": "n/a \u2014 this card demonstrates a DATA defect, not a trading edge.",
+    "why_not_arbitraged": "n/a",
+    "horizon_days": 5,
+    "regime": "calm",
+    "falsifiable_claim": "The supplied constituent file, used naively as the universe source, silently omits 88 of today's 200 most liquid NSE names \u2014 all with zero recorded inclusion/exclusion events \u2014 biasing every cross-sectional rank computed within it."
+  },
+  "pre_registered": {
+    "sign": 1,
+    "horizon_days": 5,
+    "committed_at": "2026-09-04T19:35:55+00:00",
+    "hash": "sha256:9d685999f9d508854f959d7b8e22f7b304bba6da7324d3064caab445a96ccc51"
+  },
+  "formula": "mul(-1, ts_std(returns, 42))",
+  "ast_canonical": "mul(-1,ts_std(returns,42))",
+  "complexity": {
+    "nodes": 5,
+    "depth": 3,
+    "free_params": 2
+  },
+  "tier1_metrics": {
+    "rank_ic": 0.056840148158827326,
+    "t_stat": 8.123576310720887,
+    "n_days": 863.0,
+    "sign": 1
+  },
+  "fresh_fold_metrics": {
+    "rank_ic": 0.013923683235589,
+    "t_stat": 1.2162456731832618,
+    "n_days": 243.0,
+    "sign": 1
+  },
+  "tier2_metrics": {},
+  "audit": {
+    "marginal_ic": 0.05684014815882733,
+    "deflated_sharpe": 0.9999999999999987,
+    "t_stat": 8.123576310720889,
+    "pbo": 0.0,
+    "holdout_peek_id": null,
+    "holdout_scored_on": null,
+    "gate_b_statistics_verdict": "accept",
+    "note": "DSR/PBO/statistics were computed on a panel whose UNIVERSE was rebuilt from the supplied constituent CSV (naive use) instead of Phase 1's bhavcopy-derived universe. All PASS \u2014 the defect is cross-sectional (which names exist), not statistical."
+  },
+  "redteam": {
+    "tests_run": [
+      "subsample_year",
+      "regime_split",
+      "cost_sweep",
+      "extra_lag",
+      "sign_stability"
+    ],
+    "results": {
+      "extra_lag": {
+        "base_rank_ic": 0.056840148158827326,
+        "rank_ic_lagged": 0.05518850125028489,
+        "t_stat_lagged": 7.88292593248596,
+        "degradation": 0.02905775164285762,
+        "flag": false
+      }
+    },
+    "verdict": "survives",
+    "failed_tests": [],
+    "note": "purge/embargo is applied inside every backtest call and raised no flag \u2014 it masks TRAIN/TEST time overlap; this defect is not temporal."
+  },
+  "verdict": "reject",
+  "lineage": {
+    "parent_card_id": null,
+    "edit_motif": null
+  },
+  "provenance": {
+    "fields_used": [
+      "returns"
+    ],
+    "caught_by": "external reconciliation against NSE's current constituent list \u2014 NOT any statistical or red-team gate",
+    "reconciliation": {
+      "today_real_n": 200,
+      "csv_union_n": 314,
+      "missing_from_csv_n": 88,
+      "missing_sample": [
+        "ADANIGREEN",
+        "ADANIPORTS",
+        "AMBER",
+        "ANANTRAJ",
+        "ANGELONE",
+        "APOLLO",
+        "ASTRAL",
+        "BANDHANBNK",
+        "BDL",
+        "BHARATFORG",
+        "BOSCHLTD",
+        "BSE",
+        "CAMS",
+        "CARTRADE",
+        "CDSL"
+      ],
+      "missing_with_zero_events_n": 87,
+      "missing_with_zero_events_pct": 98.9
+    },
+    "fix": "Phase 1 abandoned the supplied CSV for selection; universe rebuilt from daily bhavcopy by trailing 63d turnover (reports/p1_universe_report.md)."
+  },
+  "reject_reason": "DATA INTEGRITY: universe source structurally broken. DSR=1.000, PBO=0.000, purge/embargo clean, red-team survives \u2014 ALL PASS. Caught only by reconciling the 314-symbol CSV union against today's real 200-name universe: 88 names absent entirely, 98.9% with zero inclusion/exclusion events (a change-log replayed onto an incomplete base seed)."
+}

@@ -1,0 +1,75 @@
+{
+  "card_id": "bad_stats",
+  "thesis_id": "th_bad_stats",
+  "generation": 0,
+  "thesis": {
+    "mechanism": "Stand-in for a data-pipeline bug (e.g. a field joined one day early) that leaks same-day/forward information into a 'feature' \u2014 NOT something the causal operator grammar can produce directly (negative delay() windows are structurally rejected).",
+    "counterparty": "n/a \u2014 this card demonstrates a STATISTICAL/leakage defect.",
+    "why_not_arbitraged": "n/a \u2014 not a real signal.",
+    "horizon_days": 1,
+    "regime": "calm",
+    "falsifiable_claim": "A signal that is 85% the forward return it predicts clears every statistical gate and is only caught by a causality stress (extra_lag)."
+  },
+  "pre_registered": {
+    "sign": 1,
+    "horizon_days": 1,
+    "committed_at": "2026-09-04T19:35:55+00:00",
+    "hash": "sha256:fced01d8e0b3ebf9d278b3f939970ba0d5196dec16b08a1ac2c57137db61d8a8"
+  },
+  "formula": "0.85 * fwd_ret_1_demeaned + 0.15 * noise  (data-pipeline look-ahead leak)",
+  "ast_canonical": "0.85 * fwd_ret_1_demeaned + 0.15 * noise  (data-pipeline look-ahead leak)",
+  "complexity": {
+    "nodes": 0,
+    "depth": 0,
+    "free_params": 0
+  },
+  "tier1_metrics": {
+    "rank_ic": 0.9696631322991042,
+    "t_stat": 2098.78911092392,
+    "n_days": 863.0,
+    "sign": 1
+  },
+  "fresh_fold_metrics": {},
+  "tier2_metrics": {},
+  "audit": {
+    "marginal_ic": 0.9696631322991044,
+    "deflated_sharpe": 1.0,
+    "t_stat": 2098.78911092392,
+    "pbo": 0.0,
+    "holdout_peek_id": null,
+    "holdout_scored_on": null,
+    "gate_b_statistics_verdict": "accept",
+    "note": "A statistics-only gate (DSR/PBO/t-stat) ACCEPTS this at DSR=1.000 \u2014 it measures over-searching, not causality."
+  },
+  "redteam": {
+    "tests_run": [
+      "extra_lag"
+    ],
+    "results": {
+      "extra_lag": {
+        "base_rank_ic": 0.9696631322991042,
+        "rank_ic_lagged": -0.05047627788652383,
+        "t_stat_lagged": -10.948204338818579,
+        "degradation": 1.052055478036834,
+        "flag": true
+      }
+    },
+    "verdict": "killed",
+    "failed_tests": [
+      "extra_lag"
+    ]
+  },
+  "verdict": "reject",
+  "lineage": {
+    "parent_card_id": null,
+    "edit_motif": null
+  },
+  "provenance": {
+    "fields_used": [
+      "fwd_ret_1_demeaned (label, via a simulated pipeline bug)"
+    ],
+    "caught_by": "red-team test 5 (extra_lag) \u2014 NOT Gate B statistics",
+    "teaching_point": "Deflated Sharpe / PBO measure OVER-SEARCHING, not CHEATING. A single, un-searched, perfectly leaky signal has n_trials=1 and passes DSR trivially; only a causality stress (extra_lag) catches it."
+  },
+  "reject_reason": "STATISTICAL: look-ahead leakage. Tier-1 VAL_A rank_ic=0.9697 (spectacular). Gate B statistics ACCEPTS (deflated_sharpe=1.000 >= 0.95, pbo=0.000). Killed only by red-team extra_lag: rank_ic collapses 0.9697 -> -0.0505 under a 1-day shift."
+}

@@ -1,0 +1,30 @@
+{
+  "signal": "label itself (fwd_ret_1_demeaned) \u2014 stand-in for a pipeline look-ahead bug",
+  "tier1_val_a": {
+    "rank_ic": 0.9696631322991042,
+    "t_stat": 2098.78911092392,
+    "n_days": 863.0
+  },
+  "gate_b_statistics": {
+    "verdict": "accept",
+    "reasons": [],
+    "marginal_ic": 0.9696631322991044,
+    "deflated_sharpe": 1.0,
+    "dsr_min": 0.95,
+    "t_stat": 2098.78911092392,
+    "t_stat_bar": 3.0,
+    "pbo": 0.0,
+    "pbo_max": 0.5,
+    "holdout_touched": false,
+    "would_a_pure_statistics_gate_accept": true
+  },
+  "redteam_extra_lag": {
+    "base_rank_ic": 0.9696631322991042,
+    "rank_ic_lagged": -0.05047627788652383,
+    "t_stat_lagged": -10.948204338818579,
+    "degradation": 1.052055478036834,
+    "flag": true
+  },
+  "redteam_verdict": "killed",
+  "teaching_point": "Deflated Sharpe / PBO measure OVER-SEARCHING, not CHEATING. A single, un-searched, perfectly leaky signal has n_trials=1 and passes DSR trivially; only a causality stress (extra_lag) catches it."
+}

@@ -1,0 +1,27 @@
+{
+  "formula": "sub(div(close, delay(close, 2)), 1)",
+  "thesis": {
+    "mechanism": "Investors underreact to recent price-relevant news; a stock that has just risen over the past 2 sessions keeps rising as slower participants catch up.",
+    "counterparty": "Retail / slow-moving flow that has not yet priced in the recent move.",
+    "why_not_arbitraged": "Short-horizon, small per-name edge; capacity-limited and cost-sensitive, so large funds don't fully close it.",
+    "horizon_days": 5,
+    "regime": "calm",
+    "falsifiable_claim": "Stocks in the top quintile of trailing 2-day return outperform the bottom quintile over the next 5 days.",
+    "pre_registered_sign": 1
+  },
+  "pre_registered_sign": 1,
+  "realized_val_a": {
+    "rank_ic": -0.020374549234088497,
+    "t_stat": -4.353146999705948,
+    "n_days": 863.0
+  },
+  "realized_sign": -1,
+  "sign_ok": false,
+  "gate_b_novelty_verdict": "reject (thesis failure)",
+  "what_a_stats_only_gate_would_see": {
+    "rank_ic": -0.020374549234088497,
+    "t_stat": -4.353146999705948,
+    "n_days": 863.0
+  },
+  "teaching_point": "No purely statistical gate flags this -- DSR/PBO/red-team all score the pre-registered-sign-oriented series, which looks like a perfectly good discovery. Only comparing the REALIZED sign against what was committed BEFORE the backtest catches a thesis that got the mechanism backwards."
+}

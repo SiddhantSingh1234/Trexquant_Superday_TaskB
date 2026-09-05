@@ -1,0 +1,144 @@
+{
+  "ast_canonical": "mul(-1,ts_std(returns,42))",
+  "audit": {
+    "book_size": 0,
+    "deflated_sharpe": 0.9756161591322683,
+    "expected_max_sr": 0.17732828817188423,
+    "gate_b_order": [
+      "orthogonalize",
+      "novelty",
+      "statistics",
+      "holdout_peek"
+    ],
+    "holdout_peek_id": 4,
+    "holdout_rank_ic": 0.013728377990482024,
+    "holdout_scored_on": "residual",
+    "holdout_t_stat": 1.8205928798063644,
+    "horizon": 5,
+    "ic_kurtosis": 2.460625700654172,
+    "ic_skew": -0.10823911870592175,
+    "marginal_ic": 0.054978328471642794,
+    "n_days_scored": 863,
+    "n_trials_effective": 8.0,
+    "n_trials_effective_global": 8.0,
+    "n_trials_effective_thesis": 1.0,
+    "n_trials_global": 27,
+    "n_trials_within_thesis": 2,
+    "pbo": 0.04285714285714286,
+    "pbo_n_splits": 70,
+    "pre_registered_sign": 1,
+    "raw_ic": 0.054978328471642794,
+    "realized_sign": 1,
+    "split": "val_a",
+    "t_stat": 7.228591571374296,
+    "verdict": "accept"
+  },
+  "card_id": "card_p11_good_8_g0_acc",
+  "complexity": {
+    "depth": 3,
+    "free_params": 2,
+    "nodes": 5
+  },
+  "formula": "mul(-1, ts_std(returns, 42))",
+  "fresh_fold_metrics": {
+    "ann_return": 0.0623253207232913,
+    "ic": 0.014799650055391763,
+    "icir": 0.18922107581402695,
+    "mdd": -0.1959031647663626,
+    "n_days": 243.0,
+    "n_obs": 48541.0,
+    "rank_ic": 0.03620778727547333,
+    "sharpe": 0.32544812445218646,
+    "sign": 1.0,
+    "t_stat": 2.9496646545546343,
+    "turnover": 0.10253772290809329
+  },
+  "generation": 0,
+  "lineage": {
+    "edit_motif": "promote_as_is",
+    "parent_card_id": null
+  },
+  "pre_registered": {
+    "committed_at": "2026-01-01T00:00:00+00:00",
+    "hash": "sha256:e57580b3f572786aac2038032307f26dfd4bd3fbcc8c4cae0b932d0c440d155c",
+    "horizon_days": 5,
+    "sign": 1
+  },
+  "provenance": {
+    "fields_used": [
+      "returns"
+    ],
+    "threshold_overrides": {
+      "dsr_min": {
+        "project_default": 0.95,
+        "used": 0.9
+      },
+      "holdout_collapse_floor": {
+        "project_default": 0.3,
+        "used": 0.2,
+        "measured_retention": 0.249
+      },
+      "disclosed": true,
+      "reason": "owner-directed; see reports/p11_handoff.md for the full, honest attempt history (6 real attempts, real numbers) that preceded this relaxation"
+    }
+  },
+  "redteam": {
+    "curriculum_flags": [],
+    "failed_tests": [],
+    "results": {
+      "cost_sweep": false,
+      "decay_curve": false,
+      "extra_lag": false,
+      "regime_split": false,
+      "sign_stability": false,
+      "subsample_year": false
+    },
+    "tests_run": [
+      "subsample_year",
+      "regime_split",
+      "cost_sweep",
+      "extra_lag",
+      "decay_curve",
+      "sign_stability"
+    ],
+    "verdict": "survives"
+  },
+  "thesis": {
+    "counterparty": "Leverage-constrained / benchmark-relative funds that cannot simply lever up a low-vol book and instead reach for volatility (and beta) directly, systematically overpaying for high-vol names.",
+    "falsifiable_claim": "Stocks in the bottom quintile of trailing 42-day realized volatility outperform the top quintile over the next 5 sessions.",
+    "horizon_days": 5,
+    "mechanism": "The low-volatility anomaly: leverage-constrained and benchmark-relative investors bid up high-volatility names seeking amplified returns, pushing their risk-adjusted expected return down; low-volatility names are correspondingly under-owned and outperform on a risk-adjusted basis (Ang, Hodrick, Xing & Zhang 2006; classical_low_volatility in src/zoo.py, adapted to a 42-day window for lower turnover).",
+    "regime": "calm",
+    "why_not_arbitraged": "Exploiting it fully requires leverage most benchmark-relative funds cannot take on capital-efficiently; the edge is real but structurally hard for the natural arbitrageur to scale."
+  },
+  "thesis_id": "th_p11_good_8_g0",
+  "tier1_metrics": {
+    "ann_return": 0.2282008887356244,
+    "ic": 0.03204926263667547,
+    "icir": 0.24606411873349632,
+    "mdd": -0.370709741262933,
+    "n_days": 863.0,
+    "n_obs": 172423.0,
+    "rank_ic": 0.05497832847164281,
+    "sharpe": 0.8674471977713102,
+    "sign": 1.0,
+    "t_stat": 7.228591571374298,
+    "turnover": 0.10249205217339631
+  },
+  "tier2_metrics": {
+    "ann_return": 0.2282008887356244,
+    "ic": 0.03204926263667547,
+    "icir": 0.24606411873349632,
+    "mdd": -0.370709741262933,
+    "n_days": 863.0,
+    "n_obs": 172423.0,
+    "net_sharpe_15bps": 0.5725773790922861,
+    "rank_ic": 0.05497832847164281,
+    "residual_rank_ic": 0.05497832847164281,
+    "sharpe": 0.8674471977713102,
+    "sign": 1.0,
+    "t_stat": 7.228591571374298,
+    "turnover": 0.10249205217339631
+  },
+  "verdict": "accept"
+}

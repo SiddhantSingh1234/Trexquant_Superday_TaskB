@@ -3,19 +3,16 @@
 An automated equity-alpha research system for the NIFTY-200 (India) universe. LLM
 agents propose factor theses and formulas; deterministic code (backtester,
 statistical gates, red-team stress tests) decides accept/reject. The system is
-built as thirteen phases (P0-P13), each with its own module, tests, and
-handoff report under `reports/`. A read-only Streamlit dashboard explains and
-lets a reviewer explore the finished system.
+organized into stages, each with its own module and tests. A read-only
+Streamlit dashboard explains and lets a reviewer explore the finished system.
 
-This README explains, stage by stage, what each phase does and the exact
-command(s) to run it, then walks through the main orchestration loop (P10) in
+This README explains, stage by stage, what each stage does and the exact
+command(s) to run it, then walks through the main orchestration loop in
 detail: every node in the graph, the order they run in, and the rules that
 govern promotion, rejection, and stopping.
 
-Full design rationale lives in `IMPLEMENTATION_PLAN.md` (the build spec),
-`FLOW_EXPLAINED.md` (plain-English walkthrough), and `PHASE_PROMPTS.md` (the
-brief given to build each phase). This document is the "how do I actually run
-it" companion to those.
+Full design rationale lives in `FLOW_EXPLAINED.md` (plain-English walkthrough).
+This document is the "how do I actually run it" companion to that.
 
 ## Quick start: running the main loop end to end
 
@@ -33,16 +30,16 @@ data with no setup at all:
 ```
 
 For a real run against actual market data, build the data artifacts first,
-in this order (P2 before P1 -- the universe is derived from price data):
+in this order (prices before universe -- the universe is derived from price data):
 
 ```
-./.venv/Scripts/python.exe -m src.prices     # P2: data/prices/ohlcv.parquet
-./.venv/Scripts/python.exe -m src.universe   # P1: data/universe/membership.parquet (needs P2)
-./.venv/Scripts/python.exe -m src.panel      # P3: data/panel/features.parquet, labels.parquet, splits.json (needs P1+P2)
+./.venv/Scripts/python.exe -m src.prices     # data/prices/ohlcv.parquet
+./.venv/Scripts/python.exe -m src.universe   # data/universe/membership.parquet (needs prices)
+./.venv/Scripts/python.exe -m src.panel      # data/panel/features.parquet, labels.parquet, splits.json (needs universe+prices)
 ```
 
-P4-P9 (backtester, operators/zoo, gates/ledger, memory, agents, red-team)
-need no build step -- the loop imports them directly.
+The backtester, operators/zoo, gates/ledger, memory, agents, and red-team
+stages need no build step -- the loop imports them directly.
 
 For `--mode live` you additionally need a Groq API key. Either export it or
 put it in a `.env` file at the repo root (loaded automatically):
@@ -102,9 +99,9 @@ and `reports/<run-id>.md` unless overridden.
 - [Setup](#setup)
 - [Configuration](#configuration)
 - [Pipeline order](#pipeline-order)
-- [Stages P0-P9 (data, engine, tooling)](#stages-p0-p9-data-engine-tooling)
-- [The main agent loop (P10) in detail](#the-main-agent-loop-p10-in-detail)
-- [P11-P13 (demo run, evaluation, slides)](#p11-p13-demo-run-evaluation-slides)
+- [Stages: data, engine, tooling](#stages-data-engine-tooling)
+- [The main agent loop in detail](#the-main-agent-loop-in-detail)
+- [Demo run, evaluation, slides](#demo-run-evaluation-slides)
 - [Dashboard](#dashboard)
 - [Running the test suite](#running-the-test-suite)
 
@@ -126,13 +123,13 @@ separate so the core research code never depends on a UI framework:
 
 ## Configuration
 
-Everything path- and constant-related lives in `src/config.py` (Phase 0):
+Everything path- and constant-related lives in `src/config.py`:
 repo paths, the five canonical data splits (`warmup`, `train`, `val_a`,
 `val_b`, `holdout`), and tuning constants (`MAX_VARIANTS_PER_THESIS=20`,
 `HOLDOUT_PEEK_BUDGET=12`, `T_STAT_BAR=3.0`, `COST_BPS_DEFAULT=15`,
 `EMBARGO_DAYS=5`, `RANDOM_SEED=42`).
 
-Three environment variables control the LLM agents (Phase 8/10):
+Three environment variables control the LLM agents:
 
 | Variable | Values | Effect |
 |---|---|---|
@@ -143,51 +140,25 @@ Three environment variables control the LLM agents (Phase 8/10):
 Everything in this repository runs and every test passes with `LLM_MODE=mock`
 and no network access.
 
-## Pipeline order
-
-The data track has one twist: **P2 runs before P1.** The universe (P1) is
-built from P2's raw bhavcopy price data by trailing 63-day turnover, so P2
-must exist first.
-
-```
-P0  (scaffolding, config, fixtures)
- -> P2  (price data)
- -> P1  (universe: liquidity-ranked top 200, monthly, trailing-only)
- -> P3  (feature panel, labels, train/val/holdout splits)
- -> P4  (backtester engine)
- -> P5  (operators, AST tools, alpha zoo)          -- independent of P0 only
- -> P6  (statistical gates + trial ledger)
- -> P7  (memory stores)                             -- independent of P0 only
- -> P8  (LLM agents + research corpus)               -- independent of P0 only
- -> P9  (red-team test menu)                         -- independent of P0 only
- -> P10 (orchestration graph -- the main agent loop)
- -> P11 (demo run + bad-example write-ups)
- -> P12 (system evaluation / gate ablation)
- -> P13 (slide deck)
-```
-
-P5, P7, P8, P9 depend only on P0 and can be built/run in any order relative to
-each other and to P1-P4.
-
-## Stages P0-P9 (data, engine, tooling)
+## Stages: data, engine, tooling
 
 Each stage is one `src/*.py` module. Most expose a `run()` (or module-level
 `__main__` block) that regenerates its output artifact(s) under `data/`, and
-a `tests/test_p<N>_*.py` file. Run a stage's script when its inputs change;
-run its tests to verify the stage in isolation.
+a `tests/test_*.py` file. Run a stage's script when its inputs change; run
+its tests to verify the stage in isolation.
 
-### P0 -- Scaffolding (`src/config.py`, `src/contracts.py`)
+### Scaffolding (`src/config.py`, `src/contracts.py`)
 
 Paths, constants, the five data splits, and the synthetic fixture generators
 (`make_fake_ohlcv`, `make_fake_features`, `make_fake_labels`,
-`make_fake_membership`, `make_fake_symbols`) every later phase's tests run
+`make_fake_membership`, `make_fake_symbols`) every later stage's tests run
 against. No business logic.
 
 ```
 ./.venv/Scripts/python.exe -m pytest tests/test_p0_contracts.py -v
 ```
 
-### P2 -- Price data (`src/prices.py`)
+### Price data (`src/prices.py`)
 
 Downloads/parses NSE bhavcopy OHLCV data, applies corporate-action (split,
 bonus, dividend) adjustments keyed by symbol, and writes
@@ -199,7 +170,7 @@ where available).
 ./.venv/Scripts/python.exe -m pytest tests/test_p2_prices.py -q
 ```
 
-### P1 -- Universe construction (`src/universe.py`)
+### Universe construction (`src/universe.py`)
 
 Builds the tradeable universe **from P2's output**, not from any supplied
 constituent file (the supplied NIFTY 200 history file was found to be
@@ -222,7 +193,7 @@ Writes `data/universe/membership.parquet`, `universe_stats.parquet`,
 ./.venv/Scripts/python.exe -m pytest tests/test_p1_universe.py -q
 ```
 
-### P3 -- Feature panel, labels, splits (`src/panel.py`)
+### Feature panel, labels, splits (`src/panel.py`)
 
 Builds the daily feature panel and forward-return labels used by every
 backtest, plus `data/panel/splits.json` (the plain-dict form of
@@ -236,10 +207,10 @@ leak if one is ever introduced).
 ./.venv/Scripts/python.exe -m pytest tests/test_p3_panel.py -q
 ```
 
-### P4 -- Backtester engine (`src/backtester.py`)
+### Backtester engine (`src/backtester.py`)
 
 The single `backtest(signal, split, horizon=..., cost_bps=..., subsample=...)`
-entry point every later phase (gates, red-team, the loop) calls. Computes
+entry point every later stage (gates, red-team, the loop) calls. Computes
 RankIC/IC, t-stat, Sharpe, turnover, max drawdown, and per-horizon IC decay
 over a named split.
 
@@ -248,7 +219,7 @@ over a named split.
 ./.venv/Scripts/python.exe -m pytest tests/test_p4_backtester.py -q
 ```
 
-### P5 -- Operators, AST tools, alpha zoo (`src/operators.py`, `src/ast_tools.py`, `src/zoo.py`)
+### Operators, AST tools, alpha zoo (`src/operators.py`, `src/ast_tools.py`, `src/zoo.py`)
 
 The formula grammar (the small DSL formulas like `rank(delivery_pct)` are
 written in), its parser/evaluator/canonicalizer/complexity scorer
@@ -261,7 +232,7 @@ pre-filter step.
 ./.venv/Scripts/python.exe -m pytest tests/test_p5_operators.py -q
 ```
 
-### P6 -- Statistical gates and trial ledger (`src/gates.py`, `src/ledger.py`)
+### Statistical gates and trial ledger (`src/gates.py`, `src/ledger.py`)
 
 The deterministic acceptance machinery: Deflated Sharpe Ratio (DSR),
 Probability of Backtest Overfitting (PBO), purge/embargo-aware walk-forward
@@ -276,7 +247,7 @@ self-reported one).
 ./.venv/Scripts/python.exe -m pytest tests/test_p6_gates.py -q
 ```
 
-### P7 -- Memory stores (`src/memory.py`)
+### Memory stores (`src/memory.py`)
 
 Six persistent stores the loop reads and writes across generations: an
 exact-match formula index, a semantic lesson store (`data/lessons.db`, kept
@@ -289,7 +260,7 @@ accepted-signal "book" used for orthogonalization/novelty checks.
 ./.venv/Scripts/python.exe -m pytest tests/test_p7_memory.py -q
 ```
 
-### P8 -- LLM agents and research corpus (`src/agents/*.py`)
+### LLM agents and research corpus (`src/agents/*.py`)
 
 Eight LLM-backed agent roles (`planner`, `librarian`, `hypothesis`,
 `economics`, `coder`, `judge`, `redteam`, `reflection`) plus the shared
@@ -301,7 +272,7 @@ budget enforcement, mock mode) and a 53-entry hand-curated anomaly corpus
 ./.venv/Scripts/python.exe -m pytest tests/test_p8_agents.py -q
 ```
 
-### P9 -- Red-team test menu (`src/redteam.py`, `src/agents/redteam.py`)
+### Red-team test menu (`src/redteam.py`, `src/agents/redteam.py`)
 
 Eleven rejection-only falsification tests (a candidate can only be hurt by
 them, never helped) run against every candidate that reaches Gate C:
@@ -315,11 +286,11 @@ a candidate.
 ./.venv/Scripts/python.exe -m pytest tests/test_p9_redteam.py -q
 ```
 
-## The main agent loop (P10) in detail
+## The main agent loop in detail
 
 Module: `src/loop.py`. This is the orchestration graph that actually
-searches for and accepts alpha factors, wiring together P1-P9. It is built
-with LangGraph and follows one governing rule:
+searches for and accepts alpha factors, wiring together every earlier stage.
+It is built with LangGraph and follows one governing rule:
 
 > **Agency where there is a decision, deterministic code where it is a fixed
 > computation.** LLM nodes only *propose* (a family, a thesis, a formula,
@@ -353,7 +324,7 @@ There are two loops, not one:
 | 3 | `brief` | `librarian` agent turns the retrieved angles into a short research brief. | agent |
 | 4 | `ideate` | `hypothesis` agent proposes a thesis (mechanism, counterparty, why-not-arbitraged, horizon, expected regime, falsifiable claim). The thesis's predicted sign is **pre-registered and hashed before any backtest runs** -- logged to `ctx.prereg_log` -- so a later "the sign flipped, but that's fine, we predicted this" cannot be fabricated after the fact. | agent + commit |
 | 5 | `gate_a_economics` | `economics` agent reviews the thesis for economic plausibility. Reject here skips straight to `reflect` -- no formula is ever coded for an economically incoherent thesis. | agent (Gate A) |
-| 6 | `code` | `coder` agent writes/edits a formula in the Phase-5 grammar. Anchored to the corpus hit only on variant 1; afterwards driven by the Judge's edit motif. | agent |
+| 6 | `code` | `coder` agent writes/edits a formula in the operators-and-zoo-stage grammar. Anchored to the corpus hit only on variant 1; afterwards driven by the Judge's edit motif. | agent |
 | 7 | `prefilter` | Free, code-only checks before spending a real backtest: does it parse, is it too complex (node/depth/free-param caps), is it an exact zoo duplicate, is it an exact repeat of a formula already tried, does it even evaluate against the price panel. Routes to `code` again (repair/repeat), `tier1` (ok), or `reflect` (reject). | code |
 | 8 | `tier1` | Backtests the candidate on **VAL_A only** and records it to the ledger as `counts_as_trial=1`. Tracks the best-so-far variant by pre-registration-oriented RankIC. | code (spends a trial) |
 | 9 | `judge` | `judge` agent looks at the Tier-1 metrics and either says "promote" (this variant is good enough) or returns an edit motif for the next `code` iteration. | agent |
@@ -473,36 +444,33 @@ Tests:
 ./.venv/Scripts/python.exe -m pytest tests/test_p10_loop.py -q
 ```
 
-## P11-P13 (demo run, evaluation, slides)
+## Demo run, evaluation, slides
 
-### P11 -- Demo run and bad examples
+### Demo run and bad examples
 
 `reports/p11_live_explore_report.md` is a real `run_loop()` invocation
 (`run_id="live_explore"`) against the built data artifacts, run the same way
 as the "How to run it" example above with `llm_mode="live"`. In that run all
 three generations were honestly rejected at the fresh-fold step (VAL_B did
 not confirm) -- reported as-is per the project rule that a system which
-rejects everything is itself a finding, not something to paper over. The
-three-bad-examples write-up planned for this phase (data / statistics /
-economics failure modes, each caught by a different mechanism) is described
-in `PHASE_PROMPTS.md`'s P11 section; consult that plus `reports/p9_handoff.md`
-and `reports/p1_universe_report.md` for the underlying evidence.
+rejects everything is itself a finding, not something to paper over. See
+`reports/p9_handoff.md` and `reports/p1_universe_report.md` for the
+underlying evidence.
 
-### P12 -- System evaluation and ablation
+### System evaluation and ablation
 
-Planned deliverable: `src/evaluation.py` plus `reports/p12_system_evaluation.md`,
-grading the gates themselves (an LLM-free ~40-factor pool with known ground
-truth -- predictive / noise / overfit / leaky -- run through each gate on and
-off, reporting catch rate, false-kill rate, and headline FDR per gate) and a
-fake-learning-detection check (do rejection *types* mature over generations
-while total rejection volume stays flat). Not yet built in this checkout --
-see `PHASE_PROMPTS.md`'s P12 section for the exact spec if resuming this work.
+`src/evaluation.py` plus `reports/p12_system_evaluation.md` grade the gates
+themselves (an LLM-free ~40-factor pool with known ground truth --
+predictive / noise / overfit / leaky -- run through each gate on and off,
+reporting catch rate, false-kill rate, and headline FDR per gate) and include
+a fake-learning-detection check (do rejection *types* mature over generations
+while total rejection volume stays flat).
 
-### P13 -- Slide deck
+### Slide deck
 
-`slides/deck.html` (also exported as `slides/Alpha Factory Deck.pdf`) and
-`slides/mc_variant_table.py` (a supporting table generator). Details and
-every measured value behind each slide are in `reports/p13_handoff.md`.
+`slides/deck.html` and `slides/mc_variant_table.py` (a supporting table
+generator). Details and every measured value behind each slide are in
+`reports/p13_handoff.md`.
 
 ## Dashboard
 
@@ -523,11 +491,10 @@ builders (`zoo_leaderboard`, a network-hitting yfinance cross-check).
 `--check` verifies every cached parquet against its declared schema and
 flags staleness.
 
-Build status in this checkout: phases D0-D3 are complete (scaffold, cache
-builders, `Home.py`, the Universe/Prices/Feature-Panel pages); see
-`reports/dash_p0_handoff.md` through `reports/dash_p3_handoff.md`.
-`tests/test_dash_p4_tooling.py` exists for the in-progress D4 work
-(Backtester / Operators-and-Zoo pages).
+Build status in this checkout: the scaffold, cache builders, `Home.py`, and
+the Universe/Prices/Feature-Panel pages are complete.
+`tests/test_dash_p4_tooling.py` exists for the in-progress Backtester /
+Operators-and-Zoo pages work.
 
 ```
 ./.venv/Scripts/python.exe -m pytest tests/test_dash_p0_scaffold.py tests/test_dash_p1_cache.py tests/test_dash_p2_home.py tests/test_dash_p3_data.py -q

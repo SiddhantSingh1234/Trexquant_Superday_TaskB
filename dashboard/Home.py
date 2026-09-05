@@ -1,15 +1,13 @@
-"""Alpha Factory Dashboard — "Start here" (built in D2).
+"""Alpha Factory Dashboard — "Start here".
 
 The narrative companion to the presentation: the one-liner, the key numbers, the
-six flowcharts, the reusable prose library, and a build-status board derived live
-from ``reports/``.
+six flowcharts, and the reusable prose library.
 
 Cold-loads in < 3 s: nothing here reads ``data/`` — the key-numbers row uses only
 cheap catalogue counts and ``src.config``.  (Per DASHBOARD_PLAN §0.4 a page may
 import ``src`` for metadata only; this page constructs no LLM client and runs no
 backtest.)
 """
-import re
 import sys as _sys
 from pathlib import Path as _Path
 
@@ -32,26 +30,6 @@ from src.operators import OPERATORS
 from src.redteam import DECISIVE_TESTS, REDTEAM_MENU
 from src.zoo import ZOO
 
-_PHASE_TITLES = flow._PHASE_TITLES  # {'p0': 'P0 scaffold', ...}
-
-
-@st.cache_data(show_spinner=False)
-def _handoff_headline(phase: str) -> str:
-    """Pull a headline pass count out of ``reports/<phase>_handoff.md``."""
-    text = data.load_handoff(phase)
-    if not text:
-        return "—"
-    for pat in (r"(\d+)\s*/\s*\1\s*(?:P\d+\s*)?tests",
-                r"\*\*(\d+)\s+passed\*\*",
-                r"(\d+)\s+passed\s+in",
-                r"→\s*\*\*(\d+)\s+passed",
-                r"(\d+)\s+passed"):
-        m = re.search(pat, text)
-        if m:
-            return f"{m.group(1)} passed"
-    return "handoff present"
-
-
 @st.cache_data(show_spinner=False)
 def _date_span() -> str:
     lo = min(v[0] for v in cfg.SPLITS.values())
@@ -67,16 +45,6 @@ def _corpus_count() -> int:
         return 0
 
 
-@st.cache_data(show_spinner=False)
-def _tests_passing() -> str:
-    """The latest existing handoff's headline count (rough 'tests passing' KPI)."""
-    for phase in reversed(list(_PHASE_TITLES)):
-        h = _handoff_headline(phase)
-        if h not in ("—", "handoff present"):
-            return f"{h} ({phase})"
-    return "—"
-
-
 # --------------------------------------------------------------------------- #
 # header + one-liner                                                           #
 # --------------------------------------------------------------------------- #
@@ -84,7 +52,6 @@ ui.page_header(
     "Alpha Factory Dashboard",
     "The AI-agent loop that invents, tests and filters stock-market alpha "
     "signals — a companion to the 20-minute walkthrough.",
-    phase_tag="D2",
 )
 ui.stale_banner(data.cache_staleness())
 st.markdown(narrative.block("one_liner"))
@@ -105,9 +72,8 @@ kpi_row([
     ("Red-team tests", str(len(REDTEAM_MENU)), f"{len(DECISIVE_TESTS)} decisive"),
     ("Tokens / thesis", f"{cfg.LLM_TOKENS_PER_THESIS_PROJECTION:,}", "measured"),
     ("Holdout peeks", str(cfg.HOLDOUT_PEEK_BUDGET), "ever"),
-    ("Tests passing", _tests_passing(), None),
 ])
-ui.source_note("src.config · src.operators · src.zoo · src.redteam · reports/p*_handoff.md")
+ui.source_note("src.config · src.operators · src.zoo · src.redteam")
 
 # --------------------------------------------------------------------------- #
 # the pipeline                                                                 #
@@ -191,7 +157,7 @@ st.markdown(narrative.block("weak_points"))
 # --------------------------------------------------------------------------- #
 ui.section("Where the data comes from")
 st.graphviz_chart(flow.render("data_lineage"), use_container_width=True)
-ui.source_note("reports/p1_handoff.md · reports/p2_handoff.md · reports/p3_handoff.md")
+ui.source_note("src.config · data/ universe, prices, and panel artifacts")
 
 # --------------------------------------------------------------------------- #
 # the P10 loop graph                                                           #
@@ -201,30 +167,7 @@ st.caption("The LangGraph state machine: the inner judge⇄code loop capped at 2
            "per thesis, fresh-fold on VAL_B, novelty before stats, "
            "rejection-only red-team, reflect → should_continue.")
 st.graphviz_chart(flow.render("loop_graph"), use_container_width=True)
-ui.source_note("IMPLEMENTATION_PLAN.md Phase 10 · reports/p10_handoff.md")
-
-# --------------------------------------------------------------------------- #
-# build status board — derived from reports/                                   #
-# --------------------------------------------------------------------------- #
-ui.section("Build status")
-st.markdown(narrative.block("build_status"))
-
-status = flow.phase_status()
-st.graphviz_chart(flow.render("phase_dag"), use_container_width=True)
-
-rows = []
-for phase, title in _PHASE_TITLES.items():
-    done = status.get(phase, False)
-    rows.append({
-        "Phase": title,
-        "Status": "done" if done else "pending",
-        "Handoff headline": _handoff_headline(phase),
-    })
-st.dataframe(rows, use_container_width=True, hide_index=True)
-n_done = sum(status.values())
-st.caption(f"{n_done} / {len(status)} phases have a handoff on disk "
-           f"(derived from `reports/p*_handoff.md` at page-load time).")
-ui.source_note("reports/p0_handoff.md … reports/p13_handoff.md")
+ui.source_note("IMPLEMENTATION_PLAN.md Phase 10")
 
 # --------------------------------------------------------------------------- #
 # nav guide                                                                    #

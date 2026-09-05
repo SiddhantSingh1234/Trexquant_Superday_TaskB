@@ -1,0 +1,126 @@
+{
+  "real_book": {
+    "status": "insufficient",
+    "n_accepted": 1,
+    "note": "fewer than 2 accepted cards \u2014 no combination performed (Phase 11 demonstrates the mechanism on a synthetic set)"
+  },
+  "demonstration": {
+    "status": "demonstration_on_documented_set",
+    "note": "fewer than 2 real accepted cards on record \u2014 demonstrating the combination + regime-gating mechanism on 4 documented formulas from 4 families, scored on the real panel; NOT a claim that these 4 have individually cleared Gate B.",
+    "formulas": {
+      "reversal_pv_covar": "mul(-1, rank(covariance(rank(high), rank(volume), 6)))",
+      "momentum_12_1": "sub(div(delay(close, 21), delay(close, 252)), 1)",
+      "low_volatility": "mul(-1, ts_std(returns, 21))",
+      "illiquidity_amihud": "ts_mean(div(abs(returns), mul(close, volume)), 21)"
+    },
+    "individual_rank_ic": {
+      "reversal_pv_covar": 0.01864811279820708,
+      "momentum_12_1": 0.02862129283762837,
+      "low_volatility": 0.052054135642349744,
+      "illiquidity_amihud": -0.020209488337921938
+    },
+    "individual_icir": {
+      "reversal_pv_covar": 0.20385944626931943,
+      "momentum_12_1": 0.13502841108320132,
+      "low_volatility": 0.2513885133557485,
+      "illiquidity_amihud": -0.1323651892833176
+    },
+    "correlation_matrix": {
+      "reversal_pv_covar": {
+        "reversal_pv_covar": 1.0,
+        "momentum_12_1": -0.0842,
+        "low_volatility": 0.0591,
+        "illiquidity_amihud": -0.2778
+      },
+      "momentum_12_1": {
+        "reversal_pv_covar": -0.0842,
+        "momentum_12_1": 1.0,
+        "low_volatility": 0.5834,
+        "illiquidity_amihud": -0.3302
+      },
+      "low_volatility": {
+        "reversal_pv_covar": 0.0591,
+        "momentum_12_1": 0.5834,
+        "low_volatility": 1.0,
+        "illiquidity_amihud": -0.6166
+      },
+      "illiquidity_amihud": {
+        "reversal_pv_covar": -0.2778,
+        "momentum_12_1": -0.3302,
+        "low_volatility": -0.6166,
+        "illiquidity_amihud": 1.0
+      }
+    },
+    "static_weights": {
+      "reversal_pv_covar": 0.47608715281061004,
+      "momentum_12_1": 0.20094356697925578,
+      "low_volatility": 0.15923463772989585,
+      "illiquidity_amihud": 0.16373464248023836
+    },
+    "combined_icir": 0.28929469386110523,
+    "beats_best_individual": true,
+    "regime_gating": {
+      "bull": {
+        "n_days": 377,
+        "weights": {
+          "reversal_pv_covar": 0.25592928957074257,
+          "momentum_12_1": 0.35527969864933295,
+          "low_volatility": 0.19226578333312347,
+          "illiquidity_amihud": 0.19652522844680106
+        },
+        "icir_regime_gated": 0.1970189795987481,
+        "icir_static_weights": 0.24714429240992197,
+        "gating_improves_icir": false
+      },
+      "bear": {
+        "n_days": 281,
+        "weights": {
+          "reversal_pv_covar": 0.5725642244791956,
+          "momentum_12_1": 0.1339730384426276,
+          "low_volatility": 0.12645820028462731,
+          "illiquidity_amihud": 0.16700453679354943
+        },
+        "icir_regime_gated": 0.32654124970542964,
+        "icir_static_weights": 0.27807962344567655,
+        "gating_improves_icir": true
+      },
+      "calm": {
+        "n_days": 340,
+        "weights": {
+          "reversal_pv_covar": 0.38214756927788635,
+          "momentum_12_1": 0.2369131328505636,
+          "low_volatility": 0.18316619755860536,
+          "illiquidity_amihud": 0.19777310031294476
+        },
+        "icir_regime_gated": 0.3166583695986956,
+        "icir_static_weights": 0.3325636617837013,
+        "gating_improves_icir": false
+      },
+      "volatile": {
+        "n_days": 523,
+        "weights": {
+          "reversal_pv_covar": 0.4933337769769673,
+          "momentum_12_1": 0.1834149053050857,
+          "low_volatility": 0.15940437744362046,
+          "illiquidity_amihud": 0.1638469402743266
+        },
+        "icir_regime_gated": 0.2635347131580498,
+        "icir_static_weights": 0.25901556426382527,
+        "gating_improves_icir": true
+      },
+      "highvol": {
+        "n_days": 359,
+        "weights": {
+          "reversal_pv_covar": 0.5102128947026904,
+          "momentum_12_1": 0.17072659017834713,
+          "low_volatility": 0.1434264403556305,
+          "illiquidity_amihud": 0.17563407476333195
+        },
+        "icir_regime_gated": 0.2352449064631301,
+        "icir_static_weights": 0.2202772265535026,
+        "gating_improves_icir": true
+      }
+    }
+  },
+  "primary": "demonstration"
+}

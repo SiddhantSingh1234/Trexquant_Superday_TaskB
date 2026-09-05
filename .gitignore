@@ -26,3 +26,5 @@ data/ledger.db
 
 # Regenerated report binaries (keep the .md files)
 reports/*.png
+
+scratch/

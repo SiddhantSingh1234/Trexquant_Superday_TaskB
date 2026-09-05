@@ -1,0 +1,66 @@
+{
+  "card_id": "bad_economics",
+  "thesis_id": "th_bad_economics",
+  "generation": 0,
+  "thesis": {
+    "mechanism": "Investors underreact to recent price-relevant news; a stock that has just risen over the past 2 sessions keeps rising as slower participants catch up.",
+    "counterparty": "Retail / slow-moving flow that has not yet priced in the recent move.",
+    "why_not_arbitraged": "Short-horizon, small per-name edge; capacity-limited and cost-sensitive, so large funds don't fully close it.",
+    "horizon_days": 5,
+    "regime": "calm",
+    "falsifiable_claim": "Stocks in the top quintile of trailing 2-day return outperform the bottom quintile over the next 5 days.",
+    "pre_registered_sign": 1
+  },
+  "pre_registered": {
+    "sign": 1,
+    "horizon_days": 5,
+    "committed_at": "2026-09-04T19:35:55+00:00",
+    "hash": "sha256:626c7e991ed89c78254d3d3dc170c5c32318fa5a3672690e177fab92379bbfc0"
+  },
+  "formula": "sub(div(close, delay(close, 2)), 1)",
+  "ast_canonical": "sub(div(close,delay(close,2)),1)",
+  "complexity": {
+    "nodes": 7,
+    "depth": 4,
+    "free_params": 2
+  },
+  "tier1_metrics": {
+    "rank_ic": -0.020374549234088497,
+    "t_stat": -4.353146999705948,
+    "n_days": 863.0,
+    "sign": -1
+  },
+  "fresh_fold_metrics": {},
+  "tier2_metrics": {},
+  "audit": {
+    "marginal_ic": -0.020374549234088497,
+    "pre_registered_sign": 1,
+    "realized_sign": -1,
+    "sign_ok": false,
+    "oriented_what_a_stats_only_gate_would_see": {
+      "rank_ic": -0.020374549234088497,
+      "t_stat": -4.353146999705948,
+      "n_days": 863.0
+    },
+    "note": "check_sign HARD REJECTS regardless of |IC| \u2014 DSR/PBO/red-team, which score the pre-registered-sign-oriented series, would see nothing wrong."
+  },
+  "redteam": {
+    "tests_run": [],
+    "results": {},
+    "verdict": "not_run",
+    "note": "never reached \u2014 Gate B novelty rejects on sign mismatch first."
+  },
+  "verdict": "reject",
+  "lineage": {
+    "parent_card_id": null,
+    "edit_motif": null
+  },
+  "provenance": {
+    "fields_used": [
+      "close"
+    ],
+    "caught_by": "gates.check_sign \u2014 NOT a statistical gate",
+    "teaching_point": "No purely statistical gate flags this -- DSR/PBO/red-team all score the pre-registered-sign-oriented series, which looks like a perfectly good discovery. Only comparing the REALIZED sign against what was committed BEFORE the backtest catches a thesis that got the mechanism backwards."
+  },
+  "reject_reason": "ECONOMIC: realized sign opposite pre-registered sign. Pre-registered sign=+1 (momentum thesis, committed before any backtest). Realized VAL_A sign=-1 (rank_ic=-0.0204, t=-4.35 \u2014 decisively significant, the OPPOSITE direction). gates.check_sign: sign_ok=False -> hard reject. No statistical gate would have flagged the oriented series, which looks like a strong, real discovery."
+}

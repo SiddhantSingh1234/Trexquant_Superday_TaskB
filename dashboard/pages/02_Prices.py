@@ -1,4 +1,4 @@
-"""Prices — 02_Prices.py  (built in D3)
+"""Prices — 02_Prices.py.
 
 Explores price data coverage, corporate-action adjustments, data quality
 and the per-symbol candlestick drill-down.
@@ -37,7 +37,6 @@ st.set_page_config(page_title="Prices", layout="wide")
 ui.page_header(
     "Prices",
     "Coverage · CA adjustment · Data quality · Per-symbol candlesticks",
-    phase_tag="D3",
 )
 
 ui.stale_banner(data.cache_staleness())

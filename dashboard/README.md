@@ -10,26 +10,17 @@ Read-only over the project's data. It never mutates `data/` except its own cache
 
 ```
 pip install -r requirements-dashboard.txt
-python dashboard/build_cache.py            # precompute the small aggregates (< 90s)
+python dashboard/build_cache.py
 streamlit run dashboard/Home.py
 ```
 
 `--heavy` adds the opt-in builders (`zoo_leaderboard`, `prices_yf_crosscheck`) —
 minutes, and `prices_yf_crosscheck` hits the network.
 
-## Phase map (dashboard build)
+## Deploy Notes
 
-| Phase | Deliverable |
-|---|---|
-| D0 | scaffold, `lib/` contracts, theme, cache-builder registry, fixtures |
-| D1 | every cheap cache builder → `data/dashboard/*.parquet` |
-| D2 | `Home.py`, the six flowcharts (`lib/flow`), the narrative library (`lib/narrative`) |
-| D3 | `01_Universe`, `02_Prices`, `03_Feature_Panel` |
-| D4 | `04_Backtester`, `05_Operators_and_Zoo` |
-| D5 | `06_Gates_and_Ledger`, `09_Red_Team` |
-| D6 | `07_Memory`, `08_LLM_Agents` |
-| D7 | `10_The_Loop`, `11_Alpha_Cards`, `12_System_Evaluation`, `13_Bad_Examples` |
-| D8 | `14_Build_Log`, consistency pass, deploy notes |
+The dashboard can be deployed to Streamlit Community Cloud or Hugging Face Spaces.
+Because of the data size implications, the dashboard is designed to need only the `data/dashboard/` caches and sliced reads. You should deploy using a **caches-only** deploy that does not ship the multi-GB `ohlcv.parquet` file. Pages that need raw parquet files will degrade gracefully (for example, the per-symbol candlestick shows `data_missing` when the parquet is omitted).
 
 ## Cache builders
 
@@ -39,10 +30,9 @@ writes one `data/dashboard/<name>.parquet` plus a row in `_manifest.json`
 A missing source → an empty schema-correct frame + `status:"no_source"`.
 
 `--check` verifies every parquet against `lib/fixtures.CACHE_SCHEMAS` and reports
-staleness (a source newer than its cache); it exits non-zero when a cache is
-stale — expected while P11/P12 are running.
+staleness when a source is newer than its cache.
 
-### Builder catalogue (D1)
+### Builder catalogue
 
 Cheap pass measured at **~34-48 s** on the dev machine (well under the 90 s
 budget). One columnar read of `ohlcv.parquet` (8 cols) is shared across every

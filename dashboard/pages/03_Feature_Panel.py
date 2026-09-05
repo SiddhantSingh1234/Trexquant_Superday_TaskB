@@ -1,4 +1,4 @@
-"""Feature Panel — 03_Feature_Panel.py  (built in D3)
+"""Feature Panel — 03_Feature_Panel.py.
 
 Presents the ten alpha features: their distributions, ICs, look-ahead self-test,
 leakage-detector sanity check, NaN coverage, label distributions, and
@@ -37,7 +37,6 @@ st.set_page_config(page_title="Feature Panel", layout="wide")
 ui.page_header(
     "Feature Panel",
     "Ten alpha features · Distributions · IC · Look-ahead self-test · Leakage detector",
-    phase_tag="D3",
 )
 
 ui.stale_banner(data.cache_staleness())

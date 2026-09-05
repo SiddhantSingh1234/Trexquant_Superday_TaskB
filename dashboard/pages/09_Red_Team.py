@@ -1,4 +1,4 @@
-"""Red Team — 09_Red_Team.py  (built in D5)
+"""Red Team — 09_Red_Team.py.
 
 Gate C: eleven pre-written, parameterised falsification backtests. The agent
 (Phase 8) picks *which* attacks fit a candidate; it never writes code — the
@@ -35,7 +35,6 @@ ui.page_header(
     "Red Team",
     "Gate C — eleven falsification backtests; a candidate survives only if it "
     "beats all five decisive ones.",
-    phase_tag="D5",
 )
 ui.stale_banner(data.cache_staleness())
 

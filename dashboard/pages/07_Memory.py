@@ -1,4 +1,4 @@
-"""Memory — 07_Memory.py  (built in D6)
+"""Memory — 07_Memory.py.
 
 The six persistent memory stores that keep the loop from overfitting its own
 SEARCH PROCESS, not just the signals it finds.
@@ -40,7 +40,6 @@ ui.page_header(
     "Memory",
     "Six stores keep the loop from overfitting its own search process — "
     "not just the signals it finds.",
-    phase_tag="D6",
 )
 ui.stale_banner(data.cache_staleness())
 

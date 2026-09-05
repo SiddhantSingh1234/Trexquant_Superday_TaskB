@@ -1,4 +1,4 @@
-"""Gates & Ledger — 06_Gates_and_Ledger.py  (built in D5)
+"""Gates & Ledger — 06_Gates_and_Ledger.py.
 
 Gate B — "did we fool ourselves?" — as an interactive argument, not just a
 static description: the over-searching explainer, a live Deflated-Sharpe
@@ -40,7 +40,6 @@ st.set_page_config(page_title="Gates & Ledger", layout="wide")
 ui.page_header(
     "Gates & Ledger",
     "Gate B, end to end: is it NEW? then — given how hard we looked — is it REAL?",
-    phase_tag="D5",
 )
 ui.stale_banner(data.cache_staleness())
 
@@ -58,12 +57,11 @@ TH = eng.thresholds()
 # =========================================================================== #
 ui.section(
     "1. Gate B order",
-    help_text="Four steps, in this exact order — changed deliberately after the "
-              "build caught its own bug (reports/p6_handoff.md).",
+    help_text="Four steps, in this exact order.",
 )
 st.graphviz_chart(flow.render("gate_b"))
 st.markdown(narrative.block("gate_b_order"))
-ui.source_note("src/gates.py gate_b() · reports/p6_handoff.md §6")
+ui.source_note("src.gates.py gate_b()")
 
 st.markdown(
     "**Novelty is free and already computed; a holdout peek is 1 of "

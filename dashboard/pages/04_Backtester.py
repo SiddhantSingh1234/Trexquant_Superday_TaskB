@@ -1,4 +1,4 @@
-"""Backtester — 04_Backtester.py  (built in D4)
+"""Backtester — 04_Backtester.py.
 
 One deterministic engine — ``src.backtester.backtest`` — scores a daily
 cross-sectional signal and returns the Section-0.5 Metrics dict.  Every
@@ -33,7 +33,6 @@ st.set_page_config(page_title="Backtester", layout="wide")
 ui.page_header(
     "Backtester",
     "One engine, called from eight places downstream.",
-    phase_tag="D4",
 )
 
 ui.stale_banner(data.cache_staleness())

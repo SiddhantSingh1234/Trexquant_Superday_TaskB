@@ -9,12 +9,10 @@ and only ``src.config`` (asserted by the D0 import-fence test).
 """
 from __future__ import annotations
 
-from pathlib import Path
-
 import graphviz
 import plotly.graph_objects as go
 
-from src.config import REPORTS_DIR, SPLITS
+from src.config import SPLITS
 
 from .charts import PALETTE, TEMPLATE
 
@@ -23,7 +21,6 @@ DIAGRAMS: tuple[str, ...] = (
     "loop_graph",
     "gate_b",
     "data_lineage",
-    "phase_dag",
     "card_lifecycle",
 )
 
@@ -214,58 +211,7 @@ def _data_lineage() -> graphviz.Digraph:
 
 
 # --------------------------------------------------------------------------- #
-# 5 — the phase DAG, coloured done / pending from reports/                      #
-# --------------------------------------------------------------------------- #
-_PHASE_TITLES = {
-    "p0": "P0 scaffold", "p1": "P1 universe", "p2": "P2 prices",
-    "p3": "P3 panel", "p4": "P4 backtester", "p5": "P5 operators",
-    "p6": "P6 gates+ledger", "p7": "P7 memory", "p8": "P8 agents",
-    "p9": "P9 red-team", "p10": "P10 loop", "p11": "P11 demo",
-    "p12": "P12 evaluation", "p13": "P13 slides",
-}
-
-
-def phase_status() -> dict[str, bool]:
-    """``{'p0': True, ...}`` — a phase is *done* iff its handoff file exists.
-    Derived, never hard-coded (P11/P12 may land while the dashboard is built)."""
-    out: dict[str, bool] = {}
-    for key in _PHASE_TITLES:
-        out[key] = (Path(REPORTS_DIR) / f"{key}_handoff.md").exists()
-    return out
-
-
-def _phase_dag() -> graphviz.Digraph:
-    g = _digraph("phase_dag", rankdir="LR")
-    status = phase_status()
-
-    def add(key: str) -> None:
-        done = status.get(key, False)
-        # Use a single-line label (no literal newline) so the DOT source keeps
-        # "pending" on the same line as the node ID — the test searches
-        # each line independently via splitlines().
-        suffix = "" if done else " (pending)"
-        _fill(g, key, _PHASE_TITLES[key] + suffix,
-              _STAGE if done else _MUTED,
-              fontcolor="#0E1117" if done else PALETTE["muted"])
-
-    for key in _PHASE_TITLES:
-        add(key)
-
-    # critical path
-    for a, b in [("p0", "p2"), ("p2", "p1"), ("p1", "p3"), ("p3", "p4"),
-                 ("p4", "p6"), ("p6", "p10"), ("p10", "p11"), ("p11", "p13")]:
-        g.edge(a, b)
-    # parallel branch P5/P7/P8/P9 feed the loop
-    for key in ("p5", "p7", "p8", "p9"):
-        g.edge("p4", key, style="dashed")
-        g.edge(key, "p10", style="dashed")
-    g.edge("p11", "p12", style="dashed")
-    g.edge("p12", "p13", style="dashed")
-    return g
-
-
-# --------------------------------------------------------------------------- #
-# 6 — the Alpha Card lifecycle (a stack that grows one section per stage)       #
+# 5 — the Alpha Card lifecycle (a stack that grows one section per stage)       #
 # --------------------------------------------------------------------------- #
 def _card_lifecycle() -> graphviz.Digraph:
     g = _digraph("card_lifecycle")
@@ -296,7 +242,6 @@ _BUILDERS = {
     "loop_graph": _loop_graph,
     "gate_b": _gate_b,
     "data_lineage": _data_lineage,
-    "phase_dag": _phase_dag,
     "card_lifecycle": _card_lifecycle,
 }
 
@@ -331,8 +276,12 @@ def data_regions_timeline() -> go.Figure:
         lo, hi = SPLITS[region]
         lo, hi = pd.Timestamp(lo), pd.Timestamp(hi)
         role, colour = _ROLE.get(region, (region, PALETTE["accent"]))
+        # Plotly's date-axis bars use a numeric width in milliseconds.  Passing
+        # pandas' Timedelta directly works through some encoders, but Streamlit
+        # serializes figures with orjson, which cannot encode Timedelta.
+        duration_ms = (hi - lo).total_seconds() * 1_000
         fig.add_trace(go.Bar(
-            base=[lo], x=[hi - lo], y=[region.upper()], orientation="h",
+            base=[lo.isoformat()], x=[duration_ms], y=[region.upper()], orientation="h",
             marker_color=colour, name=role, hovertext=f"{role}<br>{lo.date()} → {hi.date()}",
             hoverinfo="text", showlegend=True,
         ))
@@ -342,7 +291,8 @@ def data_regions_timeline() -> go.Figure:
         xaxis_title="", yaxis_title="", legend=dict(orientation="h", y=-0.25),
     )
     hi_lo, hi_hi = SPLITS["holdout"]
-    fig.add_annotation(x=pd.Timestamp(hi_lo) + (pd.Timestamp(hi_hi) - pd.Timestamp(hi_lo)) / 2,
+    midpoint = pd.Timestamp(hi_lo) + (pd.Timestamp(hi_hi) - pd.Timestamp(hi_lo)) / 2
+    fig.add_annotation(x=midpoint.isoformat(),
                        y="HOLDOUT", text="12 counted peeks", showarrow=False,
                        font=dict(color="#0E1117", size=11))
     return fig

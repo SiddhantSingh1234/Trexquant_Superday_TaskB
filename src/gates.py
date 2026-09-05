@@ -86,6 +86,9 @@ MIN_MARGINAL_IC = 0.01      # novelty floor: |residual RankIC| below this == clo
 DSR_MIN = 0.95             # P(true SR > 0) the residual must clear
 PBO_MAX = 0.50             # probability-of-backtest-overfitting ceiling
 MIN_DSR_SAMPLE = 60        # need at least this many scored days for a DSR
+HOLDOUT_COLLAPSE_FLOOR = 0.30  # HOLDOUT |rank_ic| must retain at least this
+#   fraction of the VAL_A marginal_ic that earned the peek, or the confirmation
+#   fails (Gate B step 4).
 
 EULER_GAMMA = 0.5772156649015329
 _TRADING_DAYS = 252
@@ -862,7 +865,7 @@ def gate_b(
             reasons.append(
                 f"holdout: rank_ic sign {h_sign:+d} != pre-registered {pre_sign:+d}"
             )
-        elif abs(hm["rank_ic"]) < 0.3 * abs(audit["marginal_ic"]):
+        elif abs(hm["rank_ic"]) < HOLDOUT_COLLAPSE_FLOOR * abs(audit["marginal_ic"]):
             reasons.append(
                 f"holdout: rank_ic={hm['rank_ic']:.4f} collapsed vs val marginal "
                 f"{audit['marginal_ic']:.4f}"

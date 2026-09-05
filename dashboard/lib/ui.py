@@ -13,15 +13,8 @@ import streamlit as st
 # --------------------------------------------------------------------------- #
 # Header + chrome                                                              #
 # --------------------------------------------------------------------------- #
-def page_header(title: str, subtitle: str = "", phase_tag: str | None = None) -> None:
-    """A consistent H1 + caption.  ``phase_tag`` renders a small "built in D3" chip."""
-    if phase_tag:
-        st.markdown(
-            f"<span style='background:#1A1F2B;border:1px solid #2E3646;"
-            f"border-radius:10px;padding:2px 8px;font-size:0.75rem;"
-            f"color:#9AA4B2'>built in {phase_tag}</span>",
-            unsafe_allow_html=True,
-        )
+def page_header(title: str, subtitle: str = "") -> None:
+    """Render a consistent page title and optional subtitle."""
     st.title(title)
     if subtitle:
         st.caption(subtitle)

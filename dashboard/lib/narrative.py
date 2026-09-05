@@ -21,7 +21,6 @@ BLOCKS: tuple[str, ...] = (
     "novelty_claims",
     "weak_points",
     "walkthrough",
-    "build_status",
     "nav_guide",
 )
 
@@ -178,7 +177,7 @@ idea, so they share one predicted direction, and the sign check passes for every
 one.
 
 **How often does the best of N pure-noise signals clear the "t > 3" bar?**
-(measured on the built system — `reports/p6_handoff.md` §"measured")
+(measured with a Monte Carlo simulation)
 
 | Things you tried (N) | realised E[max t] | P(best clears t > 3) — on pure noise |
 |---:|---:|---:|
@@ -194,7 +193,7 @@ tells you which case you are in. Only the count does. Hence the ledger. We count
 knob-variants measured as ~2 effective bets) and **run-wide, not per-thesis**
 (opening a new thesis must not reset the counter).
 
-_Source: FLOW_EXPLAINED.md PART 2 (S6 section) · reports/p6_handoff.md §"measured"_
+_Source: FLOW_EXPLAINED.md PART 2 (S6 section)_
 """
 
 
@@ -350,33 +349,12 @@ _Source: FLOW_EXPLAINED.md PART 4_
 """
 
 
-@_b("build_status")
-def _build_status() -> str:
-    return """
-The system is built in phases, each human-verified before the next begins. The
-critical path is **P0 → P2 → P1 → P3 → P4 → P6 → P10 → P11 → P13**, with
-**P5 / P7 / P8 / P9** (operators, memory, agents, red-team) as a parallel branch
-feeding the orchestration loop (P10). Portfolio combination runs **once, after
-the loop terminates** — it is a post-process, not a graph node.
-
-The loop's stop rule: token budget exhausted **OR** K = 3 consecutive
-generations adding < ε novelty-adjusted marginal IC **OR** a hard generation cap
-— whichever fires first.
-
-The board below is **derived live** from which `reports/p*_handoff.md` files
-exist — never a hard-coded status list, because P11/P12 may land while this
-dashboard is being built.
-
-_Source: IMPLEMENTATION_PLAN.md Phase 10 · §0.7 · EXECUTION ORDER_
-"""
-
-
 @_b("nav_guide")
 def _nav_guide() -> str:
     return """
 | Page | What it contains |
 |---|---|
-| **Home** | this page — the narrative, the six flowcharts, the key numbers, the build board |
+| **Home** | this page — the narrative, the flowcharts, and the key numbers |
 | **01 Universe** | the survivorship-free coverage chart, liquidity floor, churn, canary & heavyweight timelines, membership explorer |
 | **02 Prices** | coverage by year, corporate actions, extreme returns, source eras, delivery availability, VWAP sanity, per-symbol candlesticks |
 | **03 Feature Panel** | the ten features, distributions, correlation, IC & IC-decay, the look-ahead self-test, the leakage-detector sanity check |
@@ -390,7 +368,6 @@ def _nav_guide() -> str:
 | **11 Alpha Cards** | the accepted-card gallery |
 | **12 System Evaluation** | the factory-level metrics (productivity, FDR, efficiency, ablation) |
 | **13 Bad Examples** | the three deliberate failures — data / statistics / economics |
-| **14 Build Log** | the phase handoffs and what each produced |
 
 _Source: DASHBOARD_PLAN.md §0.3_
 """

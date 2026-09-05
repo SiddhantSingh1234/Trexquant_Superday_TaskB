@@ -1,4 +1,4 @@
-"""Operators & Zoo — 05_Operators_and_Zoo.py  (built in D4)
+"""Operators & Zoo — 05_Operators_and_Zoo.py.
 
 The formula toolbox: the causal operator library, the published-alpha zoo, the
 AST parser, and a live sandbox.
@@ -44,7 +44,6 @@ st.set_page_config(page_title="Operators & Zoo", layout="wide")
 ui.page_header(
     "Operators & Zoo",
     "Every operator is causal — formula-level look-ahead is structurally impossible.",
-    phase_tag="D4",
 )
 ui.stale_banner(data.cache_staleness())
 

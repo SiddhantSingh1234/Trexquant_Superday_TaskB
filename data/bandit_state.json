@@ -13,58 +13,74 @@
     "microstructure": {
       "cumulative_reward": 0.0,
       "family": "microstructure",
-      "last_k_deltas": [],
-      "n_pulls": 0,
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
       "tokens_spent": 0
     },
     "momentum": {
       "cumulative_reward": 0.0,
       "family": "momentum",
-      "last_k_deltas": [],
-      "n_pulls": 0,
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
       "tokens_spent": 0
     },
     "quality_proxy": {
       "cumulative_reward": 0.0,
       "family": "quality_proxy",
-      "last_k_deltas": [],
-      "n_pulls": 0,
-      "tokens_spent": 0
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
+      "tokens_spent": 1200
     },
     "reversal": {
       "cumulative_reward": 0.0,
       "family": "reversal",
-      "last_k_deltas": [],
-      "n_pulls": 0,
-      "tokens_spent": 0
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
+      "tokens_spent": 1200
     },
     "seasonality": {
       "cumulative_reward": 0.0,
       "family": "seasonality",
-      "last_k_deltas": [],
-      "n_pulls": 0,
-      "tokens_spent": 0
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
+      "tokens_spent": 1200
     },
     "sentiment_proxy": {
       "cumulative_reward": 0.0,
       "family": "sentiment_proxy",
-      "last_k_deltas": [],
-      "n_pulls": 0,
-      "tokens_spent": 0
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
+      "tokens_spent": 1200
     },
     "trend": {
       "cumulative_reward": 0.0,
       "family": "trend",
-      "last_k_deltas": [],
-      "n_pulls": 0,
-      "tokens_spent": 0
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
+      "tokens_spent": 1200
     },
     "value_proxy": {
       "cumulative_reward": 0.0,
       "family": "value_proxy",
-      "last_k_deltas": [],
-      "n_pulls": 0,
-      "tokens_spent": 0
+      "last_k_deltas": [
+        0.0
+      ],
+      "n_pulls": 1,
+      "tokens_spent": 1200
     },
     "volatility": {
       "cumulative_reward": 0.0,
@@ -74,5 +90,5 @@
       "tokens_spent": 0
     }
   },
-  "updated_at": "2026-09-04T14:13:08+00:00"
+  "updated_at": "2026-09-04T19:17:13+00:00"
 }

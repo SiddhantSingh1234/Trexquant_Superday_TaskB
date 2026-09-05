@@ -1,4 +1,4 @@
-"""Universe — 01_Universe.py  (built in D3)
+"""Universe — 01_Universe.py.
 
 Proves the universe is survivorship-free, point-in-time, and flat at ~200
 names throughout 2015-2025.
@@ -33,7 +33,6 @@ st.set_page_config(page_title="Universe", layout="wide")
 ui.page_header(
     "Universe",
     "Survivorship-free · Point-in-time · Flat at ~200 names · 2015-2025",
-    phase_tag="D3",
 )
 
 # --------------------------------------------------------------------------- #

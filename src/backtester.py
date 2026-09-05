@@ -198,9 +198,13 @@ def _shift_signal(long_sig: pd.DataFrame, extra_lag: int, calendar) -> pd.DataFr
     pos = pd.Series(np.arange(len(cal)), index=cal)
     p = long_sig["date"].map(pos)
     new_p = p + extra_lag
-    ok = new_p < len(cal)
+    # ``p`` is NaN for any signal date outside ``cal`` (e.g. a full-history
+    # price panel has warmup dates the label calendar does not) -- those rows
+    # never belong in the output, and once excluded ``new_p`` is a whole-number
+    # float Series that must be cast back to int before it can index ``cal``.
+    ok = new_p.notna() & (new_p < len(cal))
     out = long_sig.loc[ok].copy()
-    out["date"] = cal[new_p[ok].to_numpy()]
+    out["date"] = cal[new_p[ok].to_numpy().astype(np.int64)]
     return out
 
 

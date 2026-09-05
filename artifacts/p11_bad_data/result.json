@@ -1,0 +1,61 @@
+{
+  "formula": "mul(-1, ts_std(returns, 42))",
+  "val_a": {
+    "rank_ic": 0.056840148158827326,
+    "t_stat": 8.123576310720887,
+    "n_days": 863.0
+  },
+  "val_b": {
+    "rank_ic": 0.013923683235589,
+    "t_stat": 1.2162456731832618,
+    "n_days": 243.0
+  },
+  "gate_b_statistics": {
+    "verdict": "accept",
+    "reasons": [],
+    "marginal_ic": 0.05684014815882733,
+    "deflated_sharpe": 0.9999999999999987,
+    "dsr_min": 0.95,
+    "t_stat": 8.123576310720889,
+    "t_stat_bar": 3.0,
+    "pbo": 0.0,
+    "pbo_max": 0.5,
+    "holdout_touched": false
+  },
+  "redteam_lag_test": {
+    "verdict": "survives",
+    "failed_tests": [],
+    "extra_lag": {
+      "base_rank_ic": 0.056840148158827326,
+      "rank_ic_lagged": 0.05518850125028489,
+      "t_stat_lagged": 7.88292593248596,
+      "degradation": 0.02905775164285762,
+      "flag": false
+    }
+  },
+  "reconciliation": {
+    "today_real_n": 200,
+    "csv_union_n": 314,
+    "missing_from_csv_n": 88,
+    "missing_sample": [
+      "ADANIGREEN",
+      "ADANIPORTS",
+      "AMBER",
+      "ANANTRAJ",
+      "ANGELONE",
+      "APOLLO",
+      "ASTRAL",
+      "BANDHANBNK",
+      "BDL",
+      "BHARATFORG",
+      "BOSCHLTD",
+      "BSE",
+      "CAMS",
+      "CARTRADE",
+      "CDSL"
+    ],
+    "missing_with_zero_events_n": 87,
+    "missing_with_zero_events_pct": 98.9
+  },
+  "fix": "Phase 1 abandoned the supplied CSV for selection; universe rebuilt from daily bhavcopy by trailing 63d turnover (reports/p1_universe_report.md)."
+}

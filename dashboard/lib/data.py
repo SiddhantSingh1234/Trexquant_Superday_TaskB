@@ -448,10 +448,18 @@ def load_corpus() -> pd.DataFrame:
     return pd.DataFrame(payload.get("anomalies", []))
 
 
-def load_handoff(phase: str) -> str:
-    """``reports/<phase>_handoff.md`` text, ``""`` if absent."""
-    p = REPORTS_DIR / f"{phase}_handoff.md"
-    return p.read_text(encoding="utf-8") if p.exists() else ""
+
+
+@st.cache_data(show_spinner=False)
+def load_report(name: str) -> str:
+    """Read a named Markdown report from ``reports/``, or return ``""``."""
+    filename = Path(name).name
+    if filename != name or not filename.endswith(".md"):
+        return ""
+    try:
+        return (REPORTS_DIR / filename).read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 # --------------------------------------------------------------------------- #

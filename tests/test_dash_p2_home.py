@@ -27,7 +27,7 @@ from dashboard.lib import flow, narrative  # noqa: E402
 # --------------------------------------------------------------------------- #
 def test_all_six_diagrams_render():
     assert set(flow.DIAGRAMS) == {
-        "pipeline", "loop_graph", "gate_b", "data_lineage", "phase_dag",
+        "pipeline", "loop_graph", "gate_b", "data_lineage",
         "card_lifecycle",
     }
     for name in flow.DIAGRAMS:
@@ -68,7 +68,7 @@ def test_region_dates_from_config():
 # every narrative block                                                        #
 # --------------------------------------------------------------------------- #
 def test_every_block_nonempty_and_cited():
-    assert len(narrative.BLOCKS) == 15
+    assert len(narrative.BLOCKS) == 14
     for name in narrative.BLOCKS:
         md = narrative.block(name)
         assert md.strip(), name
@@ -97,34 +97,8 @@ def test_sqrt_2lnN_measured_table_verbatim():
 
 
 # --------------------------------------------------------------------------- #
-# build-status board — DERIVED, not hard-coded                                 #
+# Home-page implementation checks                                               #
 # --------------------------------------------------------------------------- #
-def test_phase_status_matches_reports_on_disk():
-    from src.config import REPORTS_DIR
-
-    status = flow.phase_status()
-    for phase, done in status.items():
-        on_disk = (Path(REPORTS_DIR) / f"{phase}_handoff.md").exists()
-        assert done is on_disk, phase
-
-
-def test_phase_dag_colours_track_status():
-    status = flow.phase_status()
-    src = flow.render("phase_dag").source
-    for phase, done in status.items():
-        # a pending phase carries the "(pending)" label; a done one does not
-        node_line = [ln for ln in src.splitlines() if f'"{phase}"' in ln or f"\t{phase} " in ln or f" {phase} [" in ln]
-        joined = " ".join(node_line)
-        if not done:
-            assert "pending" in joined.lower(), phase
-
-
-def test_phase_status_is_not_a_literal_list():
-    """Guard against a future dev hard-coding the status — the source must glob."""
-    src_txt = (ROOT / "dashboard" / "lib" / "flow.py").read_text(encoding="utf-8")
-    assert "_handoff.md" in src_txt and ".exists()" in src_txt
-
-
 # --------------------------------------------------------------------------- #
 # Home.py — parses, stays lean, cold-loads fast                                #
 # --------------------------------------------------------------------------- #

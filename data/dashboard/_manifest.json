@@ -1,7 +1,7 @@
 {
   "agents_token_budget": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T14:47:47",
+    "built_at": "2026-09-05T02:30:08",
     "cols": [
       "role",
       "tier",
@@ -21,7 +21,7 @@
   },
   "corpus_family_counts": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T14:47:47",
+    "built_at": "2026-09-05T02:30:08",
     "cols": [
       "family",
       "n",
@@ -41,26 +41,26 @@
   },
   "ledger_summary": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T14:48:35",
+    "built_at": "2026-09-05T02:30:42",
     "cols": [
       "t",
       "cumulative_trials",
       "cumulative_effective"
     ],
-    "note": "ledger has no counts_as_trial=1 rows yet",
-    "rows": 0,
+    "note": "cumulative selection-trial count over time",
+    "rows": 28,
     "sources": [
       {
-        "mtime": 1788379127.876,
+        "mtime": 1788549426.561,
         "path": "data/ledger.db",
-        "size": 24576
+        "size": 45056
       }
     ],
-    "status": "no_source"
+    "status": "ok"
   },
   "loop_generations": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T14:48:35",
+    "built_at": "2026-09-05T02:30:42",
     "cols": [
       "generation",
       "family",
@@ -91,7 +91,7 @@
   },
   "loop_run_meta": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T14:48:35",
+    "built_at": "2026-09-05T02:30:42",
     "cols": [
       "key",
       "value"
@@ -109,7 +109,7 @@
   },
   "panel_feature_corr": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:00",
+    "built_at": "2026-09-05T02:30:17",
     "cols": [
       "feature_a",
       "feature_b",
@@ -128,7 +128,7 @@
   },
   "panel_feature_ic": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:17",
+    "built_at": "2026-09-05T02:30:35",
     "cols": [
       "feature",
       "horizon",
@@ -155,7 +155,7 @@
   },
   "panel_feature_ic_shift": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:21",
+    "built_at": "2026-09-05T02:30:39",
     "cols": [
       "feature",
       "variant",
@@ -179,7 +179,7 @@
   },
   "panel_feature_stats": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:00",
+    "built_at": "2026-09-05T02:30:17",
     "cols": [
       "feature",
       "year",
@@ -206,7 +206,7 @@
   },
   "panel_label_dist": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:23",
+    "built_at": "2026-09-05T02:30:41",
     "cols": [
       "horizon",
       "kind",
@@ -226,7 +226,7 @@
   },
   "panel_leaky_check": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:22",
+    "built_at": "2026-09-05T02:30:40",
     "cols": [
       "predictor",
       "rank_ic"
@@ -244,7 +244,7 @@
   },
   "panel_nan_coverage": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:23",
+    "built_at": "2026-09-05T02:30:41",
     "cols": [
       "date",
       "feature",
@@ -263,7 +263,7 @@
   },
   "panel_xsec_size": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:46:22",
+    "built_at": "2026-09-05T02:30:40",
     "cols": [
       "date",
       "n_symbols"
@@ -281,7 +281,7 @@
   },
   "prices_ca_counts": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:57",
+    "built_at": "2026-09-05T02:30:14",
     "cols": [
       "year",
       "type",
@@ -300,7 +300,7 @@
   },
   "prices_coverage_yearly": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:57",
+    "built_at": "2026-09-05T02:30:14",
     "cols": [
       "year",
       "universe_days",
@@ -326,7 +326,7 @@
   },
   "prices_extreme_returns": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:58",
+    "built_at": "2026-09-05T02:30:15",
     "cols": [
       "date",
       "symbol",
@@ -352,7 +352,7 @@
   },
   "prices_quality": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:59",
+    "built_at": "2026-09-05T02:30:16",
     "cols": [
       "check",
       "n_violations",
@@ -371,7 +371,7 @@
   },
   "prices_source_eras": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:58",
+    "built_at": "2026-09-05T02:30:15",
     "cols": [
       "source",
       "start",
@@ -391,7 +391,7 @@
   },
   "prices_vwap_sanity": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:59",
+    "built_at": "2026-09-05T02:30:16",
     "cols": [
       "year",
       "n_rows",
@@ -411,7 +411,7 @@
   },
   "universe_daily_coverage": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:56",
+    "built_at": "2026-09-05T02:30:13",
     "cols": [
       "date",
       "n_members",
@@ -437,7 +437,7 @@
   },
   "universe_intervals": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:57",
+    "built_at": "2026-09-05T02:30:13",
     "cols": [
       "symbol",
       "kind",
@@ -457,7 +457,7 @@
   },
   "universe_monthly": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:56",
+    "built_at": "2026-09-05T02:30:13",
     "cols": [
       "month_end",
       "n_selected",
@@ -485,7 +485,7 @@
   },
   "universe_overlap": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:57",
+    "built_at": "2026-09-05T02:30:14",
     "cols": [
       "month_end",
       "overlap_nse_current_pct",
@@ -514,7 +514,7 @@
   },
   "universe_sector_comp": {
     "builder_version": "d0",
-    "built_at": "2026-09-04T18:45:57",
+    "built_at": "2026-09-05T02:30:14",
     "cols": [
       "month_end",
       "sector",
