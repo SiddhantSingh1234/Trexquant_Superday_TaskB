@@ -1,4 +1,4 @@
-# Alpha Factory
+# Agentic AI Alpha Researcher
 
 An automated equity-alpha research system for the NIFTY-200 (India) universe. LLM
 agents propose factor theses and formulas; deterministic code (backtester,
